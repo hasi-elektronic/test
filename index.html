@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Renkli Bahçe Çiçekçilik</title>
+    <meta name="description" content="Basit ve görünür çiçekçi sitesi" />
+    <style>
+      :root { --p:#c63684; --d:#2b1f36; --bg:#fff7fb; --w:#fff; }
+      * { box-sizing: border-box; }
+      body { margin:0; font-family: Arial, sans-serif; background:var(--bg); color:var(--d); }
+      .hero { background: linear-gradient(135deg,#c63684,#6e3f96); color:#fff; padding:24px 16px 56px; }
+      .wrap { width:min(980px,92vw); margin:0 auto; }
+      .nav { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+      .btn { background:#fff; color:var(--p); text-decoration:none; padding:10px 14px; border-radius:999px; font-weight:700; }
+      h1,h2,h3,p { margin:0 0 10px; }
+      main { margin-top:-30px; }
+      .panel { background:var(--w); border-radius:14px; padding:16px; box-shadow:0 8px 20px rgba(0,0,0,.08); margin-bottom:14px; }
+      .grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+      .card { border:1px solid #f0deee; border-radius:12px; padding:12px; }
+      .price { color:var(--p); font-weight:700; }
+      form { display:grid; gap:10px; }
+      input,select,button { width:100%; padding:10px; border-radius:10px; border:1px solid #d9c9e4; font:inherit; }
+      button { background:#6e3f96; color:#fff; border:none; font-weight:700; }
+      #message { margin-top:8px; font-weight:700; color:#4f2f6a; }
+      footer { text-align:center; padding:18px; font-size:14px; }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="wrap">
+        <div class="nav">
+          <h1>🌸 Renkli Bahçe</h1>
+          <a class="btn" href="#siparis">Sipariş Ver</a>
+        </div>
+        <h2>Çiçekleriniz aynı gün teslim edilsin</h2>
+        <p>Doğum günü, yıl dönümü ve özel günler için taze buketler hazırlıyoruz.</p>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="panel">
+        <h3>Popüler Ürünler</h3>
+        <div class="grid">
+          <article class="card"><h3>Gül Buketi</h3><p>12 adet kırmızı gül.</p><p class="price">₺799</p></article>
+          <article class="card"><h3>Papatya Kutusu</h3><p>Minimal tasarım kutu.</p><p class="price">₺499</p></article>
+          <article class="card"><h3>Orkide Deluxe</h3><p>Çift dal beyaz orkide.</p><p class="price">₺899</p></article>
+        </div>
+      </section>
+
+      <section class="panel" id="siparis">
+        <h3>Hızlı Sipariş</h3>
+        <form id="order-form">
+          <input id="name" placeholder="Ad Soyad" required />
+          <input id="phone" placeholder="Telefon" required />
+          <select id="product" required>
+            <option value="">Ürün seçin</option>
+            <option>Gül Buketi</option>
+            <option>Papatya Kutusu</option>
+            <option>Orkide Deluxe</option>
+          </select>
+          <button type="submit">Talep Gönder</button>
+        </form>
+        <p id="message"></p>
+      </section>
+    </main>
+
+    <footer>© 2026 Renkli Bahçe Çiçekçilik • İstanbul</footer>
+
+    <script>
+      const form = document.getElementById('order-form');
+      const message = document.getElementById('message');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const name = document.getElementById('name').value.trim() || 'Müşterimiz';
+        const product = document.getElementById('product').value || 'ürün';
+        message.textContent = name + ', ' + product + ' için talebiniz alındı. Sizi arayacağız.';
+        form.reset();
+      });
+    </script>
+  </body>
+</html>
