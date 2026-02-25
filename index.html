@@ -1,20 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Reminders</title>
+<title>Erinnerungen</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
 :root {
-  --primary: #1a1f3c;
+  --primary: #0f172a;
   --accent: #4f8ef7;
-  --surface: #242a4a;
-  --surface-hover: #2d3459;
+  --surface: #1e293b;
+  --surface-hover: #273449;
   --text: #ffffff;
-  --text-secondary: #a0a8c8;
+  --text-secondary: #94a3b8;
   --low: #4ecdc4;
   --medium: #fbbf24;
   --high: #f87171;
@@ -22,8 +21,11 @@
   --danger: #ef4444;
   --radius: 16px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --cat-privat: #a78bfa;
+  --cat-arbeit: #4f8ef7;
+  --cat-hasi: #4ecdc4;
+  --cat-sonstiges: #94a3b8;
 }
-
 html, body {
   height: 100%;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -32,7 +34,6 @@ html, body {
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
 }
-
 /* ── Layout ── */
 .app {
   display: flex;
@@ -42,33 +43,140 @@ html, body {
   margin: 0 auto;
   position: relative;
 }
-
 /* ── Header ── */
 header {
   padding: 20px 20px 0;
   flex-shrink: 0;
 }
-
+.header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
 header h1 {
   font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.5px;
 }
-
-header p {
+header .header-date {
   color: var(--text-secondary);
   font-size: 14px;
   margin-top: 4px;
 }
-
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.icon-btn {
+  background: var(--surface);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 18px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.icon-btn:hover, .icon-btn:active {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+/* ── Sort Bar ── */
+.sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px 0;
+  flex-shrink: 0;
+}
+.sort-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+.sort-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.sort-btn.active {
+  background: rgba(79,142,247,0.15);
+  border-color: rgba(79,142,247,0.3);
+  color: var(--accent);
+}
+/* ── Notification Bar ── */
+.notif-bar {
+  padding: 10px 20px 0;
+  flex-shrink: 0;
+}
+.notif-bar button {
+  width: 100%;
+  background: rgba(79,142,247,0.1);
+  border: 1px solid rgba(79,142,247,0.2);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.notif-bar button:hover {
+  background: rgba(79,142,247,0.18);
+}
+.notif-bar.hidden {
+  display: none;
+}
+/* ── Search Bar ── */
+.search-bar {
+  max-height: 0;
+  overflow: hidden;
+  padding: 0 20px;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+}
+.search-bar.open {
+  max-height: 56px;
+  padding: 10px 20px 0;
+}
+.search-bar input {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.search-bar input:focus {
+  border-color: var(--accent);
+}
+.search-bar input::placeholder {
+  color: rgba(255,255,255,0.25);
+}
 /* ── Filter Tabs ── */
 .tabs {
   display: flex;
   gap: 8px;
-  padding: 16px 20px;
+  padding: 14px 20px 0;
   flex-shrink: 0;
 }
-
 .tab {
   position: relative;
   background: var(--surface);
@@ -82,12 +190,10 @@ header p {
   cursor: pointer;
   transition: all 0.25s ease;
 }
-
 .tab.active {
   background: var(--accent);
   color: #fff;
 }
-
 .tab .badge {
   display: inline-flex;
   align-items: center;
@@ -101,32 +207,94 @@ header p {
   margin-left: 6px;
   padding: 0 5px;
 }
-
 .tab:not(.active) .badge {
   background: rgba(255,255,255,0.08);
 }
-
+/* ── Category Chips ── */
+.category-chips {
+  display: flex;
+  gap: 8px;
+  padding: 10px 20px 0;
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.category-chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.chip.active {
+  background: rgba(79,142,247,0.15);
+  border-color: rgba(79,142,247,0.3);
+  color: var(--accent);
+}
+.chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+/* ── Stats Bar ── */
+.stats-bar {
+  display: flex;
+  gap: 12px;
+  padding: 12px 20px 0;
+  flex-shrink: 0;
+}
+.stat {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.stat-value {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.stat-value.overdue-count {
+  color: var(--danger);
+}
 /* ── Reminder List ── */
 .list-container {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 20px 100px;
+  padding: 12px 20px 100px;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
 }
-
 /* ── Empty State ── */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 48px 20px;
   text-align: center;
   animation: fadeIn 0.4s ease;
 }
-
 .empty-state .icon {
   width: 100px;
   height: 100px;
@@ -137,7 +305,6 @@ header p {
   justify-content: center;
   margin-bottom: 24px;
 }
-
 .empty-state .icon svg {
   width: 48px;
   height: 48px;
@@ -147,23 +314,20 @@ header p {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
 .empty-state h2 {
   font-size: 20px;
   font-weight: 600;
   margin-bottom: 8px;
 }
-
 .empty-state p {
   color: var(--text-secondary);
   font-size: 14px;
   max-width: 260px;
 }
-
 /* ── Reminder Card ── */
 .card {
   position: relative;
-  background: rgba(36, 42, 74, 0.7);
+  background: rgba(30, 41, 59, 0.75);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255,255,255,0.06);
@@ -172,10 +336,9 @@ header p {
   margin-bottom: 12px;
   overflow: hidden;
   touch-action: pan-y;
-  transition: transform 0.25s ease, opacity 0.3s ease;
+  transition: transform 0.25s ease, opacity 0.3s ease, background 0.3s ease;
   animation: slideUp 0.35s ease both;
 }
-
 .card::before {
   content: '';
   position: absolute;
@@ -184,31 +347,47 @@ header p {
   bottom: 0;
   width: 4px;
   border-radius: 4px 0 0 4px;
+  transition: width 0.2s ease;
 }
-
 .card.priority-low::before { background: var(--low); }
 .card.priority-medium::before { background: var(--medium); }
 .card.priority-high::before { background: var(--high); }
-
 .card.done {
   opacity: 0.5;
 }
-
 .card.done .card-title {
   text-decoration: line-through;
   color: var(--done);
 }
-
 .card.done .card-note {
   text-decoration: line-through;
 }
-
+/* ── Overdue Card ── */
+.card.overdue {
+  background: rgba(248, 113, 113, 0.06);
+  border-color: rgba(248, 113, 113, 0.15);
+}
+.card.overdue::before {
+  width: 6px;
+  background: var(--danger) !important;
+}
+.overdue-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--danger);
+  background: rgba(248,113,113,0.12);
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+}
 .card-row {
   display: flex;
   align-items: flex-start;
   gap: 12px;
 }
-
 .checkbox {
   flex-shrink: 0;
   width: 22px;
@@ -222,20 +401,16 @@ header p {
   transition: all 0.2s ease;
   margin-top: 1px;
 }
-
 .checkbox:hover {
   border-color: var(--accent);
 }
-
 .checkbox.checked {
   background: var(--accent);
   border-color: var(--accent);
 }
-
 .checkbox.checked svg {
   display: block;
 }
-
 .checkbox svg {
   display: none;
   width: 14px;
@@ -246,12 +421,10 @@ header p {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
 .card-body {
   flex: 1;
   min-width: 0;
 }
-
 .card-title {
   font-size: 16px;
   font-weight: 600;
@@ -259,7 +432,6 @@ header p {
   word-break: break-word;
   transition: color 0.25s ease;
 }
-
 .card-note {
   font-size: 13px;
   color: var(--text-secondary);
@@ -267,16 +439,15 @@ header p {
   line-height: 1.4;
   word-break: break-word;
 }
-
 .card-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   margin-top: 10px;
   font-size: 12px;
   color: var(--text-secondary);
+  flex-wrap: wrap;
 }
-
 .card-meta svg {
   width: 14px;
   height: 14px;
@@ -287,13 +458,11 @@ header p {
   stroke-linejoin: round;
   flex-shrink: 0;
 }
-
 .card-meta .meta-item {
   display: flex;
   align-items: center;
   gap: 4px;
 }
-
 .priority-tag {
   font-size: 11px;
   font-weight: 600;
@@ -302,18 +471,34 @@ header p {
   padding: 2px 8px;
   border-radius: 6px;
 }
-
 .priority-tag.low { background: rgba(78,205,196,0.15); color: var(--low); }
 .priority-tag.medium { background: rgba(251,191,36,0.15); color: var(--medium); }
 .priority-tag.high { background: rgba(248,113,113,0.15); color: var(--high); }
-
+.cat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.06);
+}
+.cat-badge .cat-dot-sm {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.recurrence-badge {
+  font-size: 11px;
+}
 .card-actions {
   flex-shrink: 0;
   display: flex;
   align-items: flex-start;
+  gap: 2px;
 }
-
-.delete-btn {
+.edit-btn, .delete-btn {
   background: none;
   border: none;
   width: 32px;
@@ -325,11 +510,21 @@ header p {
   border-radius: 8px;
   transition: background 0.2s ease;
 }
-
+.edit-btn:hover, .edit-btn:active {
+  background: rgba(79,142,247,0.15);
+}
+.edit-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--accent);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .delete-btn:hover, .delete-btn:active {
   background: rgba(239,68,68,0.15);
 }
-
 .delete-btn svg {
   width: 18px;
   height: 18px;
@@ -339,17 +534,14 @@ header p {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
 /* ── Swipe delete background ── */
 .card-wrapper {
   position: relative;
   margin-bottom: 12px;
 }
-
 .card-wrapper .card {
   margin-bottom: 0;
 }
-
 .swipe-bg {
   position: absolute;
   top: 0;
@@ -365,11 +557,9 @@ header p {
   opacity: 0;
   transition: opacity 0.2s ease;
 }
-
 .swipe-bg.visible {
   opacity: 1;
 }
-
 .swipe-bg svg {
   width: 24px;
   height: 24px;
@@ -379,7 +569,6 @@ header p {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
 /* ── FAB ── */
 .fab {
   position: fixed;
@@ -400,16 +589,13 @@ header p {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   z-index: 100;
 }
-
 .fab:hover {
   transform: scale(1.08);
   box-shadow: 0 12px 32px rgba(79,142,247,0.45);
 }
-
 .fab:active {
   transform: scale(0.95);
 }
-
 .fab svg {
   width: 28px;
   height: 28px;
@@ -419,12 +605,11 @@ header p {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
 /* ── Modal Overlay ── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.55);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   z-index: 200;
@@ -432,12 +617,10 @@ header p {
   pointer-events: none;
   transition: opacity 0.3s ease;
 }
-
 .modal-overlay.open {
   opacity: 1;
   pointer-events: auto;
 }
-
 /* ── Modal ── */
 .modal {
   position: fixed;
@@ -452,14 +635,12 @@ header p {
   z-index: 201;
   transform: translateY(100%);
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-  max-height: 90vh;
+  max-height: 92vh;
   overflow-y: auto;
 }
-
 .modal.open {
   transform: translateY(0);
 }
-
 .modal-handle {
   width: 40px;
   height: 4px;
@@ -467,29 +648,26 @@ header p {
   border-radius: 2px;
   margin: 0 auto 20px;
 }
-
 .modal h2 {
   font-size: 22px;
   font-weight: 700;
   margin-bottom: 24px;
 }
-
 .form-group {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
-
 .form-group label {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.form-group select {
   width: 100%;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.1);
@@ -501,72 +679,110 @@ header p {
   outline: none;
   transition: border-color 0.2s ease;
 }
-
+.form-group select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 40px;
+}
+.form-group select option {
+  background: var(--surface);
+  color: var(--text);
+}
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group select:focus {
   border-color: var(--accent);
 }
-
 .form-group textarea {
   resize: none;
-  height: 80px;
+  height: 72px;
 }
-
 .form-group input::placeholder,
 .form-group textarea::placeholder {
   color: rgba(255,255,255,0.25);
 }
-
 /* Date/time row */
 .datetime-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-
 /* Priority selector */
 .priority-options {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
-
 .priority-option {
   flex: 1;
-  padding: 12px;
+  padding: 10px 8px;
   border-radius: 12px;
   border: 2px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.03);
   text-align: center;
   cursor: pointer;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
   transition: all 0.2s ease;
 }
-
 .priority-option:hover {
   border-color: rgba(255,255,255,0.15);
 }
-
 .priority-option.selected.low {
   border-color: var(--low);
   background: rgba(78,205,196,0.1);
   color: var(--low);
 }
-
 .priority-option.selected.medium {
   border-color: var(--medium);
   background: rgba(251,191,36,0.1);
   color: var(--medium);
 }
-
 .priority-option.selected.high {
   border-color: var(--high);
   background: rgba(248,113,113,0.1);
   color: var(--high);
 }
-
+/* Category selector in modal */
+.category-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.category-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+.category-option:hover {
+  border-color: rgba(255,255,255,0.15);
+}
+.category-option .cat-dot-modal {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.category-option.selected {
+  border-color: var(--accent);
+  background: rgba(79,142,247,0.08);
+  color: var(--text);
+}
 .save-btn {
   width: 100%;
   padding: 16px;
@@ -581,10 +797,8 @@ header p {
   margin-top: 8px;
   transition: opacity 0.2s ease, transform 0.15s ease;
 }
-
 .save-btn:hover { opacity: 0.9; }
 .save-btn:active { transform: scale(0.98); }
-
 /* ── Toast ── */
 .toast-container {
   position: fixed;
@@ -600,7 +814,6 @@ header p {
   width: calc(100% - 40px);
   max-width: 400px;
 }
-
 .toast {
   background: var(--surface);
   border: 1px solid rgba(255,255,255,0.1);
@@ -617,64 +830,43 @@ header p {
   text-align: center;
   width: 100%;
 }
-
-/* ── Overdue pulse ── */
-.card.overdue {
-  animation: slideUp 0.35s ease both;
-}
-
-.card.overdue::after {
-  content: 'OVERDUE';
-  position: absolute;
-  top: 8px;
-  right: 48px;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--high);
-  letter-spacing: 0.5px;
-}
-
 /* ── Animations ── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes toastIn {
   from { opacity: 0; transform: translateY(-16px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes toastOut {
   from { opacity: 1; transform: translateY(0); }
   to { opacity: 0; transform: translateY(-16px); }
 }
-
-@keyframes cardRemove {
-  to { opacity: 0; transform: translateX(-100%); height: 0; padding: 0; margin: 0; border: 0; }
-}
-
 /* ── Scrollbar ── */
 .list-container::-webkit-scrollbar { width: 4px; }
 .list-container::-webkit-scrollbar-track { background: transparent; }
 .list-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-
 /* ── Tablet ── */
 @media (min-width: 600px) {
   header { padding: 28px 28px 0; }
   header h1 { font-size: 34px; }
-  .tabs { padding: 20px 28px; }
-  .list-container { padding: 0 28px 120px; }
+  .sort-bar { padding: 10px 28px 0; }
+  .notif-bar { padding: 10px 28px 0; }
+  .search-bar { padding: 0 28px; }
+  .search-bar.open { padding: 10px 28px 0; }
+  .tabs { padding: 14px 28px 0; }
+  .category-chips { padding: 10px 28px 0; }
+  .stats-bar { padding: 12px 28px 0; }
+  .list-container { padding: 12px 28px 120px; }
   .card { padding: 20px 20px 20px 24px; }
   .modal { padding: 28px 28px calc(28px + var(--safe-bottom)); }
   .fab { bottom: calc(32px + var(--safe-bottom)); right: 32px; width: 64px; height: 64px; }
 }
-
 /* color-scheme for native inputs */
 input[type="date"], input[type="time"] {
   color-scheme: dark;
@@ -682,80 +874,146 @@ input[type="date"], input[type="time"] {
 </style>
 </head>
 <body>
-
 <div class="app">
   <!-- Header -->
   <header>
-    <h1>Reminders</h1>
-    <p id="headerDate"></p>
+    <div class="header-top">
+      <div>
+        <h1>Erinnerungen</h1>
+        <p class="header-date" id="headerDate"></p>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="searchToggle" aria-label="Suche">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+      </div>
+    </div>
   </header>
-
+  <!-- Sort Bar -->
+  <div class="sort-bar">
+    <span class="sort-label">Sortierung:</span>
+    <button class="sort-btn active" id="sortDate" data-sort="date">Datum ↑</button>
+    <button class="sort-btn" id="sortPriority" data-sort="priority">Priorität</button>
+  </div>
+  <!-- Notification Bar -->
+  <div class="notif-bar" id="notifBar">
+    <button id="notifBtn">🔔 Benachrichtigungen aktivieren</button>
+  </div>
+  <!-- Search Bar -->
+  <div class="search-bar" id="searchBar">
+    <input type="text" id="searchInput" placeholder="Erinnerung suchen…" autocomplete="off">
+  </div>
   <!-- Filter Tabs -->
   <div class="tabs">
-    <button class="tab active" data-filter="all">All <span class="badge" id="badgeAll">0</span></button>
-    <button class="tab" data-filter="active">Active <span class="badge" id="badgeActive">0</span></button>
-    <button class="tab" data-filter="done">Done <span class="badge" id="badgeDone">0</span></button>
+    <button class="tab active" data-filter="all">Alle <span class="badge" id="badgeAll">0</span></button>
+    <button class="tab" data-filter="active">Aktiv <span class="badge" id="badgeActive">0</span></button>
+    <button class="tab" data-filter="done">Erledigt <span class="badge" id="badgeDone">0</span></button>
   </div>
-
+  <!-- Category Chips -->
+  <div class="category-chips">
+    <button class="chip active" data-cat="all">Alle</button>
+    <button class="chip" data-cat="privat"><span class="chip-dot" style="background:var(--cat-privat)"></span>Privat</button>
+    <button class="chip" data-cat="arbeit"><span class="chip-dot" style="background:var(--cat-arbeit)"></span>Arbeit</button>
+    <button class="chip" data-cat="hasi"><span class="chip-dot" style="background:var(--cat-hasi)"></span>Hasi Elektronic</button>
+    <button class="chip" data-cat="sonstiges"><span class="chip-dot" style="background:var(--cat-sonstiges)"></span>Sonstiges</button>
+  </div>
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat"><span class="stat-value" id="statActive">0</span>Aktiv</div>
+    <div class="stat"><span class="stat-value" id="statOverdue">0</span>Überfällig</div>
+    <div class="stat"><span class="stat-value" id="statDone">0</span>Erledigt</div>
+  </div>
   <!-- Reminder List -->
   <div class="list-container" id="list"></div>
-
   <!-- FAB -->
-  <button class="fab" id="fabBtn" aria-label="Add reminder">
+  <button class="fab" id="fabBtn" aria-label="Neue Erinnerung">
     <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
 </div>
-
 <!-- Modal Overlay -->
 <div class="modal-overlay" id="overlay"></div>
-
-<!-- Add Reminder Modal -->
+<!-- Add/Edit Reminder Modal -->
 <div class="modal" id="modal">
   <div class="modal-handle"></div>
-  <h2>New Reminder</h2>
-
+  <h2 id="modalTitle">Neue Erinnerung</h2>
   <div class="form-group">
-    <label>Title</label>
-    <input type="text" id="inputTitle" placeholder="What do you need to remember?" autocomplete="off">
+    <label>Titel</label>
+    <input type="text" id="inputTitle" placeholder="Woran möchtest du erinnert werden?" autocomplete="off">
   </div>
-
   <div class="form-group">
-    <label>Note (optional)</label>
-    <textarea id="inputNote" placeholder="Add details…"></textarea>
+    <label>Notiz (optional)</label>
+    <textarea id="inputNote" placeholder="Details hinzufügen…"></textarea>
   </div>
-
   <div class="datetime-row">
     <div class="form-group">
-      <label>Date</label>
+      <label>Datum</label>
       <input type="date" id="inputDate">
     </div>
     <div class="form-group">
-      <label>Time</label>
+      <label>Uhrzeit</label>
       <input type="time" id="inputTime">
     </div>
   </div>
-
   <div class="form-group">
-    <label>Priority</label>
+    <label>Priorität</label>
     <div class="priority-options">
-      <button class="priority-option low" data-priority="low">Low</button>
-      <button class="priority-option medium selected medium" data-priority="medium">Medium</button>
-      <button class="priority-option high" data-priority="high">High</button>
+      <button class="priority-option low" data-priority="low">Niedrig</button>
+      <button class="priority-option medium selected medium" data-priority="medium">Mittel</button>
+      <button class="priority-option high" data-priority="high">Hoch</button>
     </div>
   </div>
-
-  <button class="save-btn" id="saveBtn">Save Reminder</button>
+  <div class="form-group">
+    <label>Wiederholung</label>
+    <select id="inputRecurrence">
+      <option value="once">Einmalig</option>
+      <option value="daily">Täglich</option>
+      <option value="weekly">Wöchentlich</option>
+      <option value="monthly">Monatlich</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Kategorie</label>
+    <div class="category-options">
+      <button class="category-option selected" data-category="privat">
+        <span class="cat-dot-modal" style="background:var(--cat-privat)"></span> Privat
+      </button>
+      <button class="category-option" data-category="arbeit">
+        <span class="cat-dot-modal" style="background:var(--cat-arbeit)"></span> Arbeit
+      </button>
+      <button class="category-option" data-category="hasi">
+        <span class="cat-dot-modal" style="background:var(--cat-hasi)"></span> Hasi Elektronic
+      </button>
+      <button class="category-option" data-category="sonstiges">
+        <span class="cat-dot-modal" style="background:var(--cat-sonstiges)"></span> Sonstiges
+      </button>
+    </div>
+  </div>
+  <button class="save-btn" id="saveBtn">Speichern</button>
 </div>
-
 <!-- Toast Container -->
 <div class="toast-container" id="toasts"></div>
-
 <script>
+// ── Labels ──
+const priorityLabels = { low: 'Niedrig', medium: 'Mittel', high: 'Hoch' };
+const recurrenceLabels = { once: 'Einmalig', daily: 'Täglich', weekly: 'Wöchentlich', monthly: 'Monatlich' };
+const categoryLabels = { privat: 'Privat', arbeit: 'Arbeit', hasi: 'Hasi Elektronic', sonstiges: 'Sonstiges' };
+const categoryColors = { privat: 'var(--cat-privat)', arbeit: 'var(--cat-arbeit)', hasi: 'var(--cat-hasi)', sonstiges: 'var(--cat-sonstiges)' };
 // ── State ──
 let reminders = JSON.parse(localStorage.getItem('reminders') || '[]');
+// Backward compat: add missing fields
+reminders = reminders.map(r => ({
+  recurrence: 'once',
+  category: 'privat',
+  ...r
+}));
 let filter = 'all';
+let categoryFilter = 'all';
+let sortBy = 'date';
+let sortDir = 'asc';
+let searchQuery = '';
+let searchOpen = false;
+let editingId = null;
 let notifiedIds = new Set(JSON.parse(localStorage.getItem('notifiedIds') || '[]'));
-
 // ── DOM refs ──
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -764,20 +1022,24 @@ const modal = $('#modal');
 const overlay = $('#overlay');
 const fabBtn = $('#fabBtn');
 const saveBtn = $('#saveBtn');
+const modalTitle = $('#modalTitle');
 const inputTitle = $('#inputTitle');
 const inputNote = $('#inputNote');
 const inputDate = $('#inputDate');
 const inputTime = $('#inputTime');
+const inputRecurrence = $('#inputRecurrence');
+const searchBar = $('#searchBar');
+const searchInput = $('#searchInput');
 const toasts = $('#toasts');
-
+const notifBar = $('#notifBar');
+const notifBtn = $('#notifBtn');
 // ── Init ──
 function init() {
   renderHeader();
   setDefaultDateTime();
+  updateNotifBar();
   render();
-  requestNotificationPermission();
   startNotificationCheck();
-
   // Tab clicks
   $$('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -787,7 +1049,15 @@ function init() {
       render();
     });
   });
-
+  // Category chip clicks
+  $$('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      $$('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      categoryFilter = chip.dataset.cat;
+      render();
+    });
+  });
   // Priority selector
   $$('.priority-option').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -795,62 +1065,151 @@ function init() {
       btn.classList.add('selected');
     });
   });
-
+  // Category selector in modal
+  $$('.category-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('.category-option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+  // Sort buttons
+  $('#sortDate').addEventListener('click', () => handleSort('date'));
+  $('#sortPriority').addEventListener('click', () => handleSort('priority'));
+  // Search toggle
+  $('#searchToggle').addEventListener('click', toggleSearch);
+  searchInput.addEventListener('input', () => {
+    searchQuery = searchInput.value.trim().toLowerCase();
+    render();
+  });
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSearch();
+  });
   // FAB
-  fabBtn.addEventListener('click', openModal);
+  fabBtn.addEventListener('click', () => openModal());
   overlay.addEventListener('click', closeModal);
-  saveBtn.addEventListener('click', saveReminder);
-
+  saveBtn.addEventListener('click', handleSave);
   // Enter key in title input
   inputTitle.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') saveReminder();
+    if (e.key === 'Enter') handleSave();
+  });
+  // Notification button
+  notifBtn.addEventListener('click', () => {
+    if ('Notification' in window) {
+      Notification.requestPermission().then(() => updateNotifBar());
+    }
   });
 }
-
 function renderHeader() {
   const now = new Date();
-  const opts = { weekday: 'long', month: 'long', day: 'numeric' };
-  $('#headerDate').textContent = now.toLocaleDateString('en-US', opts);
+  const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+  $('#headerDate').textContent = now.toLocaleDateString('de-DE', opts);
 }
-
+function updateNotifBar() {
+  if (!('Notification' in window) || Notification.permission === 'granted') {
+    notifBar.classList.add('hidden');
+  } else if (Notification.permission === 'denied') {
+    notifBar.classList.add('hidden');
+  } else {
+    notifBar.classList.remove('hidden');
+  }
+}
 function setDefaultDateTime() {
   const now = new Date();
   now.setHours(now.getHours() + 1, 0, 0, 0);
   inputDate.value = toDateStr(now);
   inputTime.value = toTimeStr(now);
 }
-
 function toDateStr(d) {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
-
 function toTimeStr(d) {
   return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 }
-
+// ── Sort ──
+function handleSort(field) {
+  if (sortBy === field) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortBy = field;
+    sortDir = 'asc';
+  }
+  updateSortButtons();
+  render();
+}
+function updateSortButtons() {
+  const arrow = sortDir === 'asc' ? '↑' : '↓';
+  const dateBtn = $('#sortDate');
+  const prioBtn = $('#sortPriority');
+  dateBtn.classList.toggle('active', sortBy === 'date');
+  prioBtn.classList.toggle('active', sortBy === 'priority');
+  dateBtn.textContent = sortBy === 'date' ? `Datum ${arrow}` : 'Datum';
+  prioBtn.textContent = sortBy === 'priority' ? `Priorität ${arrow}` : 'Priorität';
+}
+// ── Search ──
+function toggleSearch() {
+  if (searchOpen) {
+    closeSearch();
+  } else {
+    searchOpen = true;
+    searchBar.classList.add('open');
+    setTimeout(() => searchInput.focus(), 300);
+  }
+}
+function closeSearch() {
+  searchOpen = false;
+  searchQuery = '';
+  searchInput.value = '';
+  searchBar.classList.remove('open');
+  render();
+}
 // ── Modal ──
-function openModal() {
+function openModal(id) {
+  editingId = id || null;
+  if (editingId) {
+    const r = reminders.find(r => r.id === editingId);
+    if (!r) return;
+    modalTitle.textContent = 'Erinnerung bearbeiten';
+    saveBtn.textContent = 'Aktualisieren';
+    inputTitle.value = r.title;
+    inputNote.value = r.note || '';
+    inputDate.value = r.date;
+    inputTime.value = r.time;
+    inputRecurrence.value = r.recurrence || 'once';
+    // Set priority
+    $$('.priority-option').forEach(b => b.classList.remove('selected'));
+    const prioBtn = $(`.priority-option[data-priority="${r.priority}"]`);
+    if (prioBtn) prioBtn.classList.add('selected');
+    // Set category
+    $$('.category-option').forEach(b => b.classList.remove('selected'));
+    const catBtn = $(`.category-option[data-category="${r.category || 'privat'}"]`);
+    if (catBtn) catBtn.classList.add('selected');
+  } else {
+    modalTitle.textContent = 'Neue Erinnerung';
+    saveBtn.textContent = 'Speichern';
+    resetForm();
+  }
   modal.classList.add('open');
   overlay.classList.add('open');
   setTimeout(() => inputTitle.focus(), 350);
 }
-
 function closeModal() {
   modal.classList.remove('open');
   overlay.classList.remove('open');
+  editingId = null;
   resetForm();
 }
-
 function resetForm() {
   inputTitle.value = '';
   inputNote.value = '';
   setDefaultDateTime();
+  inputRecurrence.value = 'once';
   $$('.priority-option').forEach(b => b.classList.remove('selected'));
   $('.priority-option.medium').classList.add('selected');
+  $$('.category-option').forEach(b => b.classList.remove('selected'));
+  $('.category-option[data-category="privat"]').classList.add('selected');
 }
-
-// ── Save ──
-function saveReminder() {
+// ── Save / Update ──
+function handleSave() {
   const title = inputTitle.value.trim();
   if (!title) {
     inputTitle.focus();
@@ -858,83 +1217,149 @@ function saveReminder() {
     setTimeout(() => inputTitle.style.borderColor = '', 1500);
     return;
   }
-
   const priority = $('.priority-option.selected')?.dataset.priority || 'medium';
+  const category = $('.category-option.selected')?.dataset.category || 'privat';
+  const recurrence = inputRecurrence.value;
   const dateVal = inputDate.value;
   const timeVal = inputTime.value;
-
-  const reminder = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-    title,
-    note: inputNote.value.trim(),
-    date: dateVal,
-    time: timeVal,
-    datetime: new Date(dateVal + 'T' + timeVal).getTime(),
-    priority,
-    done: false,
-    createdAt: Date.now()
-  };
-
-  reminders.push(reminder);
-  save();
-  closeModal();
-  render();
-  showToast('Reminder saved');
+  const datetime = new Date(dateVal + 'T' + timeVal).getTime();
+  if (editingId) {
+    const r = reminders.find(r => r.id === editingId);
+    if (r) {
+      r.title = title;
+      r.note = inputNote.value.trim();
+      r.date = dateVal;
+      r.time = timeVal;
+      r.datetime = datetime;
+      r.priority = priority;
+      r.category = category;
+      r.recurrence = recurrence;
+    }
+    save();
+    closeModal();
+    render();
+    showToast('Erinnerung aktualisiert');
+  } else {
+    const reminder = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      title,
+      note: inputNote.value.trim(),
+      date: dateVal,
+      time: timeVal,
+      datetime,
+      priority,
+      category,
+      recurrence,
+      done: false,
+      createdAt: Date.now()
+    };
+    reminders.push(reminder);
+    save();
+    closeModal();
+    render();
+    showToast('Erinnerung gespeichert');
+  }
 }
-
 // ── Delete ──
 function deleteReminder(id) {
   reminders = reminders.filter(r => r.id !== id);
   notifiedIds.delete(id);
   save();
   render();
-  showToast('Reminder deleted');
+  showToast('Erinnerung gelöscht');
 }
-
+// ── Edit ──
+function editReminder(id) {
+  openModal(id);
+}
 // ── Toggle done ──
 function toggleDone(id) {
   const r = reminders.find(r => r.id === id);
-  if (r) r.done = !r.done;
+  if (!r) return;
+  if (!r.done && r.recurrence && r.recurrence !== 'once') {
+    // Recurring: calculate next datetime instead of marking done
+    const dt = new Date(r.datetime);
+    switch (r.recurrence) {
+      case 'daily': dt.setDate(dt.getDate() + 1); break;
+      case 'weekly': dt.setDate(dt.getDate() + 7); break;
+      case 'monthly': dt.setMonth(dt.getMonth() + 1); break;
+    }
+    r.datetime = dt.getTime();
+    r.date = toDateStr(dt);
+    r.time = toTimeStr(dt);
+    r.done = false;
+    notifiedIds.delete(r.id);
+    save();
+    render();
+    showToast('Nächste Erinnerung geplant');
+    return;
+  }
+  r.done = !r.done;
   save();
   render();
 }
-
 // ── Persistence ──
 function save() {
   localStorage.setItem('reminders', JSON.stringify(reminders));
   localStorage.setItem('notifiedIds', JSON.stringify([...notifiedIds]));
 }
-
 // ── Render ──
 function render() {
   const now = Date.now();
   let items = [...reminders];
-
-  // Sort: active by datetime ascending, done at end
-  items.sort((a, b) => {
-    if (a.done !== b.done) return a.done ? 1 : -1;
-    return a.datetime - b.datetime;
-  });
-
-  // Filter
+  // Backward compat
+  items = items.map(r => ({
+    recurrence: 'once',
+    category: 'privat',
+    ...r
+  }));
+  // Search filter
+  if (searchQuery) {
+    items = items.filter(r =>
+      r.title.toLowerCase().includes(searchQuery) ||
+      (r.note && r.note.toLowerCase().includes(searchQuery))
+    );
+  }
+  // Status filter
   if (filter === 'active') items = items.filter(r => !r.done);
   if (filter === 'done') items = items.filter(r => r.done);
-
+  // Category filter
+  if (categoryFilter !== 'all') {
+    items = items.filter(r => (r.category || 'privat') === categoryFilter);
+  }
+  // Sort
+  const priorityWeight = { high: 3, medium: 2, low: 1 };
+  items.sort((a, b) => {
+    // Done items always at the end
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    if (sortBy === 'date') {
+      return sortDir === 'asc' ? a.datetime - b.datetime : b.datetime - a.datetime;
+    } else {
+      const diff = (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
+      return sortDir === 'asc' ? -diff : diff;
+    }
+  });
   // Update badges
   const allCount = reminders.length;
   const activeCount = reminders.filter(r => !r.done).length;
   const doneCount = reminders.filter(r => r.done).length;
+  const overdueCount = reminders.filter(r => !r.done && r.datetime < now).length;
   $('#badgeAll').textContent = allCount;
   $('#badgeActive').textContent = activeCount;
   $('#badgeDone').textContent = doneCount;
-
+  // Stats
+  $('#statActive').textContent = activeCount;
+  const statOverdue = $('#statOverdue');
+  statOverdue.textContent = overdueCount;
+  statOverdue.classList.toggle('overdue-count', overdueCount > 0);
+  $('#statDone').textContent = doneCount;
   // Empty state
   if (items.length === 0) {
-    let msg = 'No reminders yet';
-    let sub = 'Tap the + button to add your first reminder';
-    if (filter === 'active') { msg = 'All caught up!'; sub = 'No active reminders right now'; }
-    if (filter === 'done') { msg = 'Nothing completed yet'; sub = 'Completed reminders will appear here'; }
-
+    let msg = 'Noch keine Erinnerungen';
+    let sub = 'Tippe auf + um deine erste Erinnerung zu erstellen';
+    if (filter === 'active') { msg = 'Alles erledigt!'; sub = 'Keine aktiven Erinnerungen vorhanden'; }
+    if (filter === 'done') { msg = 'Noch nichts erledigt'; sub = 'Erledigte Erinnerungen erscheinen hier'; }
+    if (searchQuery) { msg = 'Keine Ergebnisse'; sub = 'Versuche einen anderen Suchbegriff'; }
     list.innerHTML = `
       <div class="empty-state">
         <div class="icon">
@@ -949,13 +1374,14 @@ function render() {
       </div>`;
     return;
   }
-
   list.innerHTML = items.map((r, i) => {
     const isOverdue = !r.done && r.datetime < now;
     const dt = new Date(r.datetime);
-    const dateStr = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const timeStr = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-
+    const dateStr = dt.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+    const timeStr = dt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const catColor = categoryColors[r.category] || categoryColors.privat;
+    const catLabel = categoryLabels[r.category] || categoryLabels.privat;
+    const isRecurring = r.recurrence && r.recurrence !== 'once';
     return `
     <div class="card-wrapper" data-id="${r.id}">
       <div class="swipe-bg">
@@ -974,11 +1400,17 @@ function render() {
                 <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 ${dateStr}, ${timeStr}
               </span>
-              <span class="priority-tag ${r.priority}">${r.priority}</span>
+              <span class="priority-tag ${r.priority}">${priorityLabels[r.priority] || r.priority}</span>
+              <span class="cat-badge"><span class="cat-dot-sm" style="background:${catColor}"></span>${catLabel}</span>
+              ${isRecurring ? `<span class="recurrence-badge">🔁 ${recurrenceLabels[r.recurrence]}</span>` : ''}
+              ${isOverdue ? '<span class="overdue-badge">⚠️ Überfällig</span>' : ''}
             </div>
           </div>
           <div class="card-actions">
-            <button class="delete-btn" onclick="deleteReminder('${r.id}')" aria-label="Delete">
+            <button class="edit-btn" onclick="editReminder('${r.id}')" aria-label="Bearbeiten">
+              <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="delete-btn" onclick="deleteReminder('${r.id}')" aria-label="Löschen">
               <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
             </button>
           </div>
@@ -986,17 +1418,13 @@ function render() {
       </div>
     </div>`;
   }).join('');
-
-  // Attach swipe listeners
   attachSwipeListeners();
 }
-
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
 }
-
 // ── Swipe to delete ──
 function attachSwipeListeners() {
   document.querySelectorAll('.card-wrapper').forEach(wrapper => {
@@ -1004,13 +1432,12 @@ function attachSwipeListeners() {
     const bg = wrapper.querySelector('.swipe-bg');
     let startX = 0, currentX = 0, isDragging = false;
     const threshold = 100;
-
     card.addEventListener('touchstart', (e) => {
       startX = e.touches[0].clientX;
+      currentX = startX;
       isDragging = true;
       card.style.transition = 'none';
     }, { passive: true });
-
     card.addEventListener('touchmove', (e) => {
       if (!isDragging) return;
       currentX = e.touches[0].clientX;
@@ -1020,12 +1447,10 @@ function attachSwipeListeners() {
         bg.classList.toggle('visible', diff < -30);
       }
     }, { passive: true });
-
     card.addEventListener('touchend', () => {
       isDragging = false;
       const diff = currentX - startX;
       card.style.transition = 'transform 0.25s ease';
-
       if (diff < -threshold) {
         card.style.transform = `translateX(-100%)`;
         card.style.opacity = '0';
@@ -1038,7 +1463,6 @@ function attachSwipeListeners() {
     });
   });
 }
-
 // ── Toast ──
 function showToast(message) {
   const toast = document.createElement('div');
@@ -1047,43 +1471,30 @@ function showToast(message) {
   toasts.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
 }
-
 // ── Notifications ──
-function requestNotificationPermission() {
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
-}
-
 function startNotificationCheck() {
   setInterval(checkReminders, 30000);
-  // Also check immediately
   checkReminders();
 }
-
 function checkReminders() {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const now = Date.now();
-
   reminders.forEach(r => {
     if (r.done || notifiedIds.has(r.id)) return;
     if (r.datetime <= now) {
       notifiedIds.add(r.id);
       save();
-
-      const priorityLabel = r.priority.charAt(0).toUpperCase() + r.priority.slice(1);
+      const prioLabel = priorityLabels[r.priority] || r.priority;
       new Notification(`⏰ ${r.title}`, {
-        body: r.note || `${priorityLabel} priority reminder`,
+        body: r.note || `${prioLabel} – Erinnerung fällig`,
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔔</text></svg>',
         tag: r.id
       });
     }
   });
 }
-
 // ── Start ──
 init();
 </script>
-
 </body>
 </html>
