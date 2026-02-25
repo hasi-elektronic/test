@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Reminders</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --primary: #1a1f3c;
+  --accent: #4f8ef7;
+  --surface: #242a4a;
+  --surface-hover: #2d3459;
+  --text: #ffffff;
+  --text-secondary: #a0a8c8;
+  --low: #4ecdc4;
+  --medium: #fbbf24;
+  --high: #f87171;
+  --done: #6b7280;
+  --danger: #ef4444;
+  --radius: 16px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--primary);
+  color: var(--text);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Layout ── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ── Header ── */
+header {
+  padding: 20px 20px 0;
+  flex-shrink: 0;
+}
+
+header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+header p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+/* ── Filter Tabs ── */
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px;
+  flex-shrink: 0;
+}
+
+.tab {
+  position: relative;
+  background: var(--surface);
+  border: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 18px;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.tab.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.tab .badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255,255,255,0.2);
+  border-radius: 9px;
+  margin-left: 6px;
+  padding: 0 5px;
+}
+
+.tab:not(.active) .badge {
+  background: rgba(255,255,255,0.08);
+}
+
+/* ── Reminder List ── */
+.list-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 20px 100px;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* ── Empty State ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  animation: fadeIn 0.4s ease;
+}
+
+.empty-state .icon {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.empty-state .icon svg {
+  width: 48px;
+  height: 48px;
+  stroke: var(--accent);
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.empty-state h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  max-width: 260px;
+}
+
+/* ── Reminder Card ── */
+.card {
+  position: relative;
+  background: rgba(36, 42, 74, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius);
+  padding: 16px 16px 16px 20px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  touch-action: pan-y;
+  transition: transform 0.25s ease, opacity 0.3s ease;
+  animation: slideUp 0.35s ease both;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 4px 0 0 4px;
+}
+
+.card.priority-low::before { background: var(--low); }
+.card.priority-medium::before { background: var(--medium); }
+.card.priority-high::before { background: var(--high); }
+
+.card.done {
+  opacity: 0.5;
+}
+
+.card.done .card-title {
+  text-decoration: line-through;
+  color: var(--done);
+}
+
+.card.done .card-note {
+  text-decoration: line-through;
+}
+
+.card-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.checkbox {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-top: 1px;
+}
+
+.checkbox:hover {
+  border-color: var(--accent);
+}
+
+.checkbox.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.checkbox.checked svg {
+  display: block;
+}
+
+.checkbox svg {
+  display: none;
+  width: 14px;
+  height: 14px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  word-break: break-word;
+  transition: color 0.25s ease;
+}
+
+.card-note {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.card-meta svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.card-meta .meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.priority-tag {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.priority-tag.low { background: rgba(78,205,196,0.15); color: var(--low); }
+.priority-tag.medium { background: rgba(251,191,36,0.15); color: var(--medium); }
+.priority-tag.high { background: rgba(248,113,113,0.15); color: var(--high); }
+
+.card-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.delete-btn:hover, .delete-btn:active {
+  background: rgba(239,68,68,0.15);
+}
+
+.delete-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--danger);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Swipe delete background ── */
+.card-wrapper {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.card-wrapper .card {
+  margin-bottom: 0;
+}
+
+.swipe-bg {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  background: var(--danger);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 24px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.swipe-bg.visible {
+  opacity: 1;
+}
+
+.swipe-bg svg {
+  width: 24px;
+  height: 24px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── FAB ── */
+.fab {
+  position: fixed;
+  bottom: calc(24px + var(--safe-bottom));
+  right: 24px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(79,142,247,0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 100;
+}
+
+.fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 12px 32px rgba(79,142,247,0.45);
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+.fab svg {
+  width: 28px;
+  height: 28px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Modal Overlay ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Modal ── */
+.modal {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 768px;
+  margin: 0 auto;
+  background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  padding: 24px 20px calc(24px + var(--safe-bottom));
+  z-index: 201;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal.open {
+  transform: translateY(0);
+}
+
+.modal-handle {
+  width: 40px;
+  height: 4px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+
+.modal h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: var(--accent);
+}
+
+.form-group textarea {
+  resize: none;
+  height: 80px;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: rgba(255,255,255,0.25);
+}
+
+/* Date/time row */
+.datetime-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Priority selector */
+.priority-options {
+  display: flex;
+  gap: 10px;
+}
+
+.priority-option {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: 2px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  text-align: center;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.priority-option:hover {
+  border-color: rgba(255,255,255,0.15);
+}
+
+.priority-option.selected.low {
+  border-color: var(--low);
+  background: rgba(78,205,196,0.1);
+  color: var(--low);
+}
+
+.priority-option.selected.medium {
+  border-color: var(--medium);
+  background: rgba(251,191,36,0.1);
+  color: var(--medium);
+}
+
+.priority-option.selected.high {
+  border-color: var(--high);
+  background: rgba(248,113,113,0.1);
+  color: var(--high);
+}
+
+.save-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.save-btn:hover { opacity: 0.9; }
+.save-btn:active { transform: scale(0.98); }
+
+/* ── Toast ── */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  width: calc(100% - 40px);
+  max-width: 400px;
+}
+
+.toast {
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  animation: toastIn 0.35s ease, toastOut 0.35s ease 2.5s forwards;
+  pointer-events: auto;
+  text-align: center;
+  width: 100%;
+}
+
+/* ── Overdue pulse ── */
+.card.overdue {
+  animation: slideUp 0.35s ease both;
+}
+
+.card.overdue::after {
+  content: 'OVERDUE';
+  position: absolute;
+  top: 8px;
+  right: 48px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--high);
+  letter-spacing: 0.5px;
+}
+
+/* ── Animations ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-16px); }
+}
+
+@keyframes cardRemove {
+  to { opacity: 0; transform: translateX(-100%); height: 0; padding: 0; margin: 0; border: 0; }
+}
+
+/* ── Scrollbar ── */
+.list-container::-webkit-scrollbar { width: 4px; }
+.list-container::-webkit-scrollbar-track { background: transparent; }
+.list-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+/* ── Tablet ── */
+@media (min-width: 600px) {
+  header { padding: 28px 28px 0; }
+  header h1 { font-size: 34px; }
+  .tabs { padding: 20px 28px; }
+  .list-container { padding: 0 28px 120px; }
+  .card { padding: 20px 20px 20px 24px; }
+  .modal { padding: 28px 28px calc(28px + var(--safe-bottom)); }
+  .fab { bottom: calc(32px + var(--safe-bottom)); right: 32px; width: 64px; height: 64px; }
+}
+
+/* color-scheme for native inputs */
+input[type="date"], input[type="time"] {
+  color-scheme: dark;
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <header>
+    <h1>Reminders</h1>
+    <p id="headerDate"></p>
+  </header>
+
+  <!-- Filter Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-filter="all">All <span class="badge" id="badgeAll">0</span></button>
+    <button class="tab" data-filter="active">Active <span class="badge" id="badgeActive">0</span></button>
+    <button class="tab" data-filter="done">Done <span class="badge" id="badgeDone">0</span></button>
+  </div>
+
+  <!-- Reminder List -->
+  <div class="list-container" id="list"></div>
+
+  <!-- FAB -->
+  <button class="fab" id="fabBtn" aria-label="Add reminder">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+</div>
+
+<!-- Modal Overlay -->
+<div class="modal-overlay" id="overlay"></div>
+
+<!-- Add Reminder Modal -->
+<div class="modal" id="modal">
+  <div class="modal-handle"></div>
+  <h2>New Reminder</h2>
+
+  <div class="form-group">
+    <label>Title</label>
+    <input type="text" id="inputTitle" placeholder="What do you need to remember?" autocomplete="off">
+  </div>
+
+  <div class="form-group">
+    <label>Note (optional)</label>
+    <textarea id="inputNote" placeholder="Add details…"></textarea>
+  </div>
+
+  <div class="datetime-row">
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="inputDate">
+    </div>
+    <div class="form-group">
+      <label>Time</label>
+      <input type="time" id="inputTime">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Priority</label>
+    <div class="priority-options">
+      <button class="priority-option low" data-priority="low">Low</button>
+      <button class="priority-option medium selected medium" data-priority="medium">Medium</button>
+      <button class="priority-option high" data-priority="high">High</button>
+    </div>
+  </div>
+
+  <button class="save-btn" id="saveBtn">Save Reminder</button>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// ── State ──
+let reminders = JSON.parse(localStorage.getItem('reminders') || '[]');
+let filter = 'all';
+let notifiedIds = new Set(JSON.parse(localStorage.getItem('notifiedIds') || '[]'));
+
+// ── DOM refs ──
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+const list = $('#list');
+const modal = $('#modal');
+const overlay = $('#overlay');
+const fabBtn = $('#fabBtn');
+const saveBtn = $('#saveBtn');
+const inputTitle = $('#inputTitle');
+const inputNote = $('#inputNote');
+const inputDate = $('#inputDate');
+const inputTime = $('#inputTime');
+const toasts = $('#toasts');
+
+// ── Init ──
+function init() {
+  renderHeader();
+  setDefaultDateTime();
+  render();
+  requestNotificationPermission();
+  startNotificationCheck();
+
+  // Tab clicks
+  $$('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      $$('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      filter = tab.dataset.filter;
+      render();
+    });
+  });
+
+  // Priority selector
+  $$('.priority-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('.priority-option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+
+  // FAB
+  fabBtn.addEventListener('click', openModal);
+  overlay.addEventListener('click', closeModal);
+  saveBtn.addEventListener('click', saveReminder);
+
+  // Enter key in title input
+  inputTitle.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') saveReminder();
+  });
+}
+
+function renderHeader() {
+  const now = new Date();
+  const opts = { weekday: 'long', month: 'long', day: 'numeric' };
+  $('#headerDate').textContent = now.toLocaleDateString('en-US', opts);
+}
+
+function setDefaultDateTime() {
+  const now = new Date();
+  now.setHours(now.getHours() + 1, 0, 0, 0);
+  inputDate.value = toDateStr(now);
+  inputTime.value = toTimeStr(now);
+}
+
+function toDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function toTimeStr(d) {
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+// ── Modal ──
+function openModal() {
+  modal.classList.add('open');
+  overlay.classList.add('open');
+  setTimeout(() => inputTitle.focus(), 350);
+}
+
+function closeModal() {
+  modal.classList.remove('open');
+  overlay.classList.remove('open');
+  resetForm();
+}
+
+function resetForm() {
+  inputTitle.value = '';
+  inputNote.value = '';
+  setDefaultDateTime();
+  $$('.priority-option').forEach(b => b.classList.remove('selected'));
+  $('.priority-option.medium').classList.add('selected');
+}
+
+// ── Save ──
+function saveReminder() {
+  const title = inputTitle.value.trim();
+  if (!title) {
+    inputTitle.focus();
+    inputTitle.style.borderColor = 'var(--high)';
+    setTimeout(() => inputTitle.style.borderColor = '', 1500);
+    return;
+  }
+
+  const priority = $('.priority-option.selected')?.dataset.priority || 'medium';
+  const dateVal = inputDate.value;
+  const timeVal = inputTime.value;
+
+  const reminder = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    title,
+    note: inputNote.value.trim(),
+    date: dateVal,
+    time: timeVal,
+    datetime: new Date(dateVal + 'T' + timeVal).getTime(),
+    priority,
+    done: false,
+    createdAt: Date.now()
+  };
+
+  reminders.push(reminder);
+  save();
+  closeModal();
+  render();
+  showToast('Reminder saved');
+}
+
+// ── Delete ──
+function deleteReminder(id) {
+  reminders = reminders.filter(r => r.id !== id);
+  notifiedIds.delete(id);
+  save();
+  render();
+  showToast('Reminder deleted');
+}
+
+// ── Toggle done ──
+function toggleDone(id) {
+  const r = reminders.find(r => r.id === id);
+  if (r) r.done = !r.done;
+  save();
+  render();
+}
+
+// ── Persistence ──
+function save() {
+  localStorage.setItem('reminders', JSON.stringify(reminders));
+  localStorage.setItem('notifiedIds', JSON.stringify([...notifiedIds]));
+}
+
+// ── Render ──
+function render() {
+  const now = Date.now();
+  let items = [...reminders];
+
+  // Sort: active by datetime ascending, done at end
+  items.sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return a.datetime - b.datetime;
+  });
+
+  // Filter
+  if (filter === 'active') items = items.filter(r => !r.done);
+  if (filter === 'done') items = items.filter(r => r.done);
+
+  // Update badges
+  const allCount = reminders.length;
+  const activeCount = reminders.filter(r => !r.done).length;
+  const doneCount = reminders.filter(r => r.done).length;
+  $('#badgeAll').textContent = allCount;
+  $('#badgeActive').textContent = activeCount;
+  $('#badgeDone').textContent = doneCount;
+
+  // Empty state
+  if (items.length === 0) {
+    let msg = 'No reminders yet';
+    let sub = 'Tap the + button to add your first reminder';
+    if (filter === 'active') { msg = 'All caught up!'; sub = 'No active reminders right now'; }
+    if (filter === 'done') { msg = 'Nothing completed yet'; sub = 'Completed reminders will appear here'; }
+
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+            <line x1="9" y1="21" x2="15" y2="21"/>
+            <line x1="10" y1="24" x2="14" y2="24"/>
+          </svg>
+        </div>
+        <h2>${msg}</h2>
+        <p>${sub}</p>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = items.map((r, i) => {
+    const isOverdue = !r.done && r.datetime < now;
+    const dt = new Date(r.datetime);
+    const dateStr = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const timeStr = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+    return `
+    <div class="card-wrapper" data-id="${r.id}">
+      <div class="swipe-bg">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+      </div>
+      <div class="card priority-${r.priority} ${r.done ? 'done' : ''} ${isOverdue ? 'overdue' : ''}" style="animation-delay:${i * 0.04}s">
+        <div class="card-row">
+          <div class="checkbox ${r.done ? 'checked' : ''}" onclick="toggleDone('${r.id}')">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="card-body">
+            <div class="card-title">${escapeHtml(r.title)}</div>
+            ${r.note ? `<div class="card-note">${escapeHtml(r.note)}</div>` : ''}
+            <div class="card-meta">
+              <span class="meta-item">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                ${dateStr}, ${timeStr}
+              </span>
+              <span class="priority-tag ${r.priority}">${r.priority}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="delete-btn" onclick="deleteReminder('${r.id}')" aria-label="Delete">
+              <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Attach swipe listeners
+  attachSwipeListeners();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ── Swipe to delete ──
+function attachSwipeListeners() {
+  document.querySelectorAll('.card-wrapper').forEach(wrapper => {
+    const card = wrapper.querySelector('.card');
+    const bg = wrapper.querySelector('.swipe-bg');
+    let startX = 0, currentX = 0, isDragging = false;
+    const threshold = 100;
+
+    card.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      isDragging = true;
+      card.style.transition = 'none';
+    }, { passive: true });
+
+    card.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      currentX = e.touches[0].clientX;
+      const diff = currentX - startX;
+      if (diff < 0) {
+        card.style.transform = `translateX(${diff}px)`;
+        bg.classList.toggle('visible', diff < -30);
+      }
+    }, { passive: true });
+
+    card.addEventListener('touchend', () => {
+      isDragging = false;
+      const diff = currentX - startX;
+      card.style.transition = 'transform 0.25s ease';
+
+      if (diff < -threshold) {
+        card.style.transform = `translateX(-100%)`;
+        card.style.opacity = '0';
+        setTimeout(() => deleteReminder(wrapper.dataset.id), 250);
+      } else {
+        card.style.transform = '';
+        bg.classList.remove('visible');
+      }
+      currentX = 0;
+    });
+  });
+}
+
+// ── Toast ──
+function showToast(message) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  toasts.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ── Notifications ──
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function startNotificationCheck() {
+  setInterval(checkReminders, 30000);
+  // Also check immediately
+  checkReminders();
+}
+
+function checkReminders() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = Date.now();
+
+  reminders.forEach(r => {
+    if (r.done || notifiedIds.has(r.id)) return;
+    if (r.datetime <= now) {
+      notifiedIds.add(r.id);
+      save();
+
+      const priorityLabel = r.priority.charAt(0).toUpperCase() + r.priority.slice(1);
+      new Notification(`⏰ ${r.title}`, {
+        body: r.note || `${priorityLabel} priority reminder`,
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔔</text></svg>',
+        tag: r.id
+      });
+    }
+  });
+}
+
+// ── Start ──
+init();
+</script>
+
+</body>
+</html>
