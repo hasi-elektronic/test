@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#080b16">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
@@ -11,37 +11,73 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>Erinnerungen</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --primary: #0f172a;
-  --accent: #4f8ef7;
-  --surface: #1e293b;
-  --surface-hover: #273449;
-  --text: #ffffff;
-  --text-secondary: #94a3b8;
-  --low: #4ecdc4;
-  --medium: #fbbf24;
-  --high: #f87171;
-  --done: #6b7280;
-  --danger: #ef4444;
-  --radius: 16px;
+  --bg: #080b16;
+  --bg2: #0d1224;
+  --surface: rgba(255,255,255,0.04);
+  --surface2: rgba(255,255,255,0.07);
+  --surface3: rgba(255,255,255,0.10);
+  --text: #f1f5f9;
+  --text2: #8b95a8;
+  --text3: #4a5568;
+  --accent: #6c5ce7;
+  --accent2: #a78bfa;
+  --accent-glow: rgba(108,92,231,0.25);
+  --gradient1: linear-gradient(135deg, #6c5ce7, #a78bfa);
+  --gradient2: linear-gradient(135deg, #6c5ce7 0%, #00b4d8 100%);
+  --gradient3: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --low: #00b894;
+  --medium: #fdcb6e;
+  --high: #e17055;
+  --done: #636e72;
+  --danger: #d63031;
+  --radius: 20px;
+  --radius-sm: 14px;
+  --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --cat-privat: #a78bfa;
-  --cat-arbeit: #4f8ef7;
-  --cat-hasi: #4ecdc4;
-  --cat-sonstiges: #94a3b8;
+  --cat-arbeit: #74b9ff;
+  --cat-hasi: #00b894;
+  --cat-sonstiges: #636e72;
 }
 
 html, body {
   height: 100%;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--primary);
+  background: var(--bg);
   color: var(--text);
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Background Glow ── */
+body::before {
+  content: '';
+  position: fixed;
+  top: -30%;
+  left: -20%;
+  width: 70%;
+  height: 60%;
+  background: radial-gradient(ellipse, rgba(108,92,231,0.12) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -20%;
+  right: -20%;
+  width: 60%;
+  height: 50%;
+  background: radial-gradient(ellipse, rgba(0,180,216,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* ── Layout ── */
@@ -52,273 +88,278 @@ html, body {
   max-width: 768px;
   margin: 0 auto;
   position: relative;
+  z-index: 1;
 }
 
 /* ── Header ── */
 header {
-  padding: 20px 20px 0;
+  padding: calc(16px + var(--safe-top)) 24px 0;
   flex-shrink: 0;
 }
 
 .header-top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
 }
 
-header h1 {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
+.header-left h1 {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  background: var(--gradient1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-header .header-date {
-  color: var(--text-secondary);
+.header-left .greeting {
   font-size: 14px;
-  margin-top: 4px;
+  color: var(--text2);
+  margin-top: 2px;
+  font-weight: 400;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  gap: 10px;
 }
 
 .icon-btn {
   background: var(--surface);
-  border: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--text-secondary);
+  color: var(--text2);
   font-size: 18px;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
-.icon-btn:hover, .icon-btn:active {
-  background: var(--surface-hover);
-  color: var(--text);
+.icon-btn:active {
+  transform: scale(0.92);
+  background: var(--surface2);
 }
 
-/* ── Sort Bar ── */
-.sort-bar {
+/* ── Stats Inline ── */
+.stats-inline {
+  display: flex;
+  gap: 20px;
+  padding: 16px 24px 0;
+  flex-shrink: 0;
+}
+
+.stat-pill {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px 0;
-  flex-shrink: 0;
-}
-
-.sort-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-right: 4px;
-}
-
-.sort-btn {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: var(--text-secondary);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 5px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.sort-btn.active {
-  background: rgba(79,142,247,0.15);
-  border-color: rgba(79,142,247,0.3);
-  color: var(--accent);
-}
-
-/* ── Notification Bar ── */
-.notif-bar {
-  padding: 10px 20px 0;
-  flex-shrink: 0;
-}
-
-.notif-bar button {
-  width: 100%;
-  background: rgba(79,142,247,0.1);
-  border: 1px solid rgba(79,142,247,0.2);
-  color: var(--accent);
-  font-family: inherit;
+  gap: 6px;
   font-size: 13px;
   font-weight: 500;
-  padding: 10px 16px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background 0.2s ease;
+  color: var(--text2);
 }
 
-.notif-bar button:hover {
-  background: rgba(79,142,247,0.18);
+.stat-pill .stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
 }
 
-.notif-bar.hidden {
-  display: none;
+.stat-pill .stat-num {
+  font-weight: 700;
+  color: var(--text);
 }
 
 /* ── Search Bar ── */
 .search-bar {
   max-height: 0;
   overflow: hidden;
-  padding: 0 20px;
-  transition: max-height 0.3s ease, padding 0.3s ease;
+  padding: 0 24px;
+  transition: max-height 0.35s cubic-bezier(0.32,0.72,0,1), padding 0.35s cubic-bezier(0.32,0.72,0,1);
 }
 
 .search-bar.open {
-  max-height: 56px;
-  padding: 10px 20px 0;
+  max-height: 60px;
+  padding: 12px 24px 0;
 }
 
 .search-bar input {
   width: 100%;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
   font-family: inherit;
   font-size: 15px;
   color: var(--text);
   outline: none;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.25s ease;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .search-bar input:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .search-bar input::placeholder {
-  color: rgba(255,255,255,0.25);
+  color: var(--text3);
 }
 
-/* ── Filter Tabs ── */
-.tabs {
-  display: flex;
-  gap: 8px;
-  padding: 14px 20px 0;
+/* ── Notification Bar ── */
+.notif-bar {
+  padding: 12px 24px 0;
   flex-shrink: 0;
 }
 
-.tab {
-  position: relative;
-  background: var(--surface);
+.notif-bar button {
+  width: 100%;
+  background: var(--gradient1);
   border: none;
-  color: var(--text-secondary);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 18px;
-  border-radius: 24px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-.tab.active {
-  background: var(--accent);
   color: #fff;
-}
-
-.tab .badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  font-size: 11px;
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 600;
-  background: rgba(255,255,255,0.2);
-  border-radius: 9px;
-  margin-left: 6px;
-  padding: 0 5px;
+  padding: 14px 20px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  letter-spacing: 0.3px;
 }
 
-.tab:not(.active) .badge {
-  background: rgba(255,255,255,0.08);
+.notif-bar button:active {
+  transform: scale(0.98);
+  opacity: 0.9;
 }
 
-/* ── Category Chips ── */
-.category-chips {
+.notif-bar.hidden {
+  display: none;
+}
+
+/* ── Filter Row (tabs + categories combined) ── */
+.filter-row {
   display: flex;
   gap: 8px;
-  padding: 10px 20px 0;
+  padding: 16px 24px 0;
   flex-shrink: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 
-.category-chips::-webkit-scrollbar { display: none; }
+.filter-row::-webkit-scrollbar { display: none; }
 
-.chip {
+.filter-chip {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.04);
+  color: var(--text2);
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  padding: 6px 14px;
-  border-radius: 20px;
+  padding: 10px 18px;
+  border-radius: 50px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
   white-space: nowrap;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
-.chip.active {
-  background: rgba(79,142,247,0.15);
-  border-color: rgba(79,142,247,0.3);
-  color: var(--accent);
+.filter-chip:active {
+  transform: scale(0.95);
 }
 
-.chip-dot {
+.filter-chip.active {
+  background: var(--gradient1);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.filter-chip .chip-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  flex-shrink: 0;
 }
 
-/* ── Stats Bar ── */
-.stats-bar {
+.filter-chip .chip-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(255,255,255,0.15);
+  border-radius: 10px;
+  padding: 0 6px;
+}
+
+.filter-chip:not(.active) .chip-count {
+  background: rgba(255,255,255,0.06);
+}
+
+/* ── Sort Row ── */
+.sort-row {
   display: flex;
-  gap: 12px;
-  padding: 12px 20px 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px 0;
   flex-shrink: 0;
 }
 
-.stat {
-  flex: 1;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px;
-  padding: 10px 12px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--text-secondary);
+.sort-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.stat-value {
-  display: block;
-  font-size: 20px;
+.section-title {
+  font-size: 16px;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 2px;
+  letter-spacing: -0.3px;
 }
 
-.stat-value.overdue-count {
-  color: var(--danger);
+.sort-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.sort-toggle:active {
+  background: var(--surface);
+}
+
+.sort-toggle svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* ── Reminder List ── */
@@ -326,10 +367,12 @@ header .header-date {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px 20px 100px;
+  padding: 8px 24px calc(100px + var(--safe-bottom));
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
 }
+
+.list-container::-webkit-scrollbar { width: 0; }
 
 /* ── Empty State ── */
 .empty-state {
@@ -337,58 +380,77 @@ header .header-date {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 20px;
+  padding: 60px 24px;
   text-align: center;
-  animation: fadeIn 0.4s ease;
+  animation: fadeIn 0.5s ease;
 }
 
-.empty-state .icon {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
+.empty-icon {
+  width: 120px;
+  height: 120px;
+  border-radius: 36px;
   background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.06);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
 }
 
-.empty-state .icon svg {
+.empty-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gradient1);
+  opacity: 0.08;
+}
+
+.empty-icon svg {
   width: 48px;
   height: 48px;
-  stroke: var(--accent);
+  stroke: var(--accent2);
   fill: none;
   stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
+  position: relative;
+  z-index: 1;
 }
 
 .empty-state h2 {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   margin-bottom: 8px;
+  letter-spacing: -0.5px;
 }
 
 .empty-state p {
-  color: var(--text-secondary);
+  color: var(--text2);
   font-size: 14px;
-  max-width: 260px;
+  line-height: 1.6;
+  max-width: 280px;
 }
 
-/* ── Reminder Card ── */
+/* ── Card ── */
+.card-wrapper {
+  position: relative;
+  margin-bottom: 14px;
+}
+
 .card {
   position: relative;
-  background: rgba(30, 41, 59, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.05);
   border-radius: var(--radius);
-  padding: 16px 16px 16px 20px;
-  margin-bottom: 12px;
+  padding: 18px 18px 18px 22px;
   overflow: hidden;
   touch-action: pan-y;
-  transition: transform 0.25s ease, opacity 0.3s ease, background 0.3s ease;
-  animation: slideUp 0.35s ease both;
+  transition: transform 0.25s ease, opacity 0.3s ease;
+  animation: slideUp 0.4s cubic-bezier(0.32,0.72,0,1) both;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .card::before {
@@ -398,16 +460,19 @@ header .header-date {
   top: 0;
   bottom: 0;
   width: 4px;
-  border-radius: 4px 0 0 4px;
-  transition: width 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .card.priority-low::before { background: var(--low); }
 .card.priority-medium::before { background: var(--medium); }
-.card.priority-high::before { background: var(--high); }
+.card.priority-high::before {
+  background: linear-gradient(180deg, #e17055, #d63031);
+  width: 4px;
+  box-shadow: 0 0 12px rgba(225,112,85,0.3);
+}
 
 .card.done {
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 .card.done .card-title {
@@ -417,17 +482,19 @@ header .header-date {
 
 .card.done .card-note {
   text-decoration: line-through;
+  opacity: 0.6;
 }
 
 /* ── Overdue Card ── */
 .card.overdue {
-  background: rgba(248, 113, 113, 0.06);
-  border-color: rgba(248, 113, 113, 0.15);
+  background: rgba(214,48,49,0.06);
+  border-color: rgba(214,48,49,0.12);
 }
 
 .card.overdue::before {
-  width: 6px;
-  background: var(--danger) !important;
+  width: 5px;
+  background: linear-gradient(180deg, #d63031, #e17055) !important;
+  box-shadow: 0 0 16px rgba(214,48,49,0.4);
 }
 
 .overdue-badge {
@@ -436,45 +503,44 @@ header .header-date {
   gap: 4px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--danger);
-  background: rgba(248,113,113,0.12);
-  padding: 2px 8px;
-  border-radius: 6px;
+  color: #e17055;
+  background: rgba(225,112,85,0.12);
+  padding: 3px 10px;
+  border-radius: 8px;
   letter-spacing: 0.3px;
 }
 
 .card-row {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
 }
 
 .checkbox {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  border: 2px solid var(--text-secondary);
-  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--text3);
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
   margin-top: 1px;
 }
 
-.checkbox:hover {
-  border-color: var(--accent);
+.checkbox:active {
+  transform: scale(0.85);
 }
 
 .checkbox.checked {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--gradient1);
+  border-color: transparent;
+  box-shadow: 0 2px 8px var(--accent-glow);
 }
 
-.checkbox.checked svg {
-  display: block;
-}
+.checkbox.checked svg { display: block; }
 
 .checkbox svg {
   display: none;
@@ -493,18 +559,19 @@ header .header-date {
 }
 
 .card-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.4;
   word-break: break-word;
   transition: color 0.25s ease;
+  letter-spacing: -0.2px;
 }
 
 .card-note {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text2);
   margin-top: 4px;
-  line-height: 1.4;
+  line-height: 1.5;
   word-break: break-word;
 }
 
@@ -512,15 +579,15 @@ header .header-date {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text3);
   flex-wrap: wrap;
 }
 
 .card-meta svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
@@ -533,30 +600,33 @@ header .header-date {
   display: flex;
   align-items: center;
   gap: 4px;
+  color: var(--text2);
+  font-weight: 500;
 }
 
 .priority-tag {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 2px 8px;
-  border-radius: 6px;
+  letter-spacing: 0.8px;
+  padding: 3px 10px;
+  border-radius: 8px;
 }
 
-.priority-tag.low { background: rgba(78,205,196,0.15); color: var(--low); }
-.priority-tag.medium { background: rgba(251,191,36,0.15); color: var(--medium); }
-.priority-tag.high { background: rgba(248,113,113,0.15); color: var(--high); }
+.priority-tag.low { background: rgba(0,184,148,0.12); color: var(--low); }
+.priority-tag.medium { background: rgba(253,203,110,0.12); color: var(--medium); }
+.priority-tag.high { background: rgba(225,112,85,0.12); color: var(--high); }
 
 .cat-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-size: 11px;
   font-weight: 500;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: rgba(255,255,255,0.06);
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text2);
 }
 
 .cat-badge .cat-dot-sm {
@@ -567,143 +637,114 @@ header .header-date {
 
 .recurrence-badge {
   font-size: 11px;
+  color: var(--accent2);
+  font-weight: 500;
 }
 
 .card-actions {
   flex-shrink: 0;
   display: flex;
   align-items: flex-start;
-  gap: 2px;
+  gap: 0;
 }
 
 .edit-btn, .delete-btn {
   background: none;
   border: none;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border-radius: 8px;
-  transition: background 0.2s ease;
+  border-radius: 10px;
+  transition: all 0.2s ease;
 }
 
-.edit-btn:hover, .edit-btn:active {
-  background: rgba(79,142,247,0.15);
-}
+.edit-btn:active { background: rgba(167,139,250,0.12); }
+.delete-btn:active { background: rgba(214,48,49,0.12); }
 
 .edit-btn svg {
   width: 16px;
   height: 16px;
-  stroke: var(--accent);
+  stroke: var(--accent2);
   fill: none;
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-.delete-btn:hover, .delete-btn:active {
-  background: rgba(239,68,68,0.15);
 }
 
 .delete-btn svg {
-  width: 18px;
-  height: 18px;
-  stroke: var(--danger);
+  width: 16px;
+  height: 16px;
+  stroke: var(--text3);
   fill: none;
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-/* ── Swipe delete background ── */
-.card-wrapper {
-  position: relative;
-  margin-bottom: 12px;
-}
-
-.card-wrapper .card {
-  margin-bottom: 0;
-}
+/* ── Swipe ── */
+.card-wrapper .card { margin-bottom: 0; }
 
 .swipe-bg {
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  background: var(--danger);
+  top: 0; right: 0; bottom: 0; width: 100%;
+  background: linear-gradient(135deg, #d63031, #e17055);
   border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 24px;
+  padding-right: 28px;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
 
-.swipe-bg.visible {
-  opacity: 1;
-}
+.swipe-bg.visible { opacity: 1; }
 
 .swipe-bg svg {
-  width: 24px;
-  height: 24px;
-  stroke: #fff;
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  width: 24px; height: 24px;
+  stroke: #fff; fill: none; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
 }
 
 /* ── FAB ── */
 .fab {
   position: fixed;
-  bottom: calc(24px + var(--safe-bottom));
-  right: 24px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: var(--accent);
+  bottom: calc(28px + var(--safe-bottom));
+  right: 28px;
+  width: 64px;
+  height: 64px;
+  border-radius: 22px;
+  background: var(--gradient1);
   border: none;
   color: #fff;
-  font-size: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(79,142,247,0.35);
+  box-shadow: 0 8px 32px var(--accent-glow), 0 2px 8px rgba(0,0,0,0.3);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   z-index: 100;
 }
 
-.fab:hover {
-  transform: scale(1.08);
-  box-shadow: 0 12px 32px rgba(79,142,247,0.45);
-}
-
 .fab:active {
-  transform: scale(0.95);
+  transform: scale(0.9);
 }
 
 .fab svg {
-  width: 28px;
-  height: 28px;
-  stroke: #fff;
-  fill: none;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  width: 28px; height: 28px;
+  stroke: #fff; fill: none; stroke-width: 2.5;
+  stroke-linecap: round; stroke-linejoin: round;
 }
 
 /* ── Modal Overlay ── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 200;
   opacity: 0;
   pointer-events: none;
@@ -718,17 +759,16 @@ header .header-date {
 /* ── Modal ── */
 .modal {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 0; left: 0; right: 0;
   max-width: 768px;
   margin: 0 auto;
-  background: var(--surface);
-  border-radius: 24px 24px 0 0;
-  padding: 24px 20px calc(24px + var(--safe-bottom));
+  background: var(--bg2);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 28px 28px 0 0;
+  padding: 20px 24px calc(24px + var(--safe-bottom));
   z-index: 201;
   transform: translateY(100%);
-  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: transform 0.4s cubic-bezier(0.32,0.72,0,1);
   max-height: 92vh;
   overflow-y: auto;
 }
@@ -740,58 +780,63 @@ header .header-date {
 .modal-handle {
   width: 40px;
   height: 4px;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.12);
   border-radius: 2px;
   margin: 0 auto 20px;
 }
 
 .modal h2 {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
   margin-bottom: 24px;
+  letter-spacing: -0.5px;
+  background: var(--gradient1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .form-group label {
   display: block;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text2);
   margin-bottom: 8px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
 }
 
 .form-group input,
 .form-group textarea,
 .form-group select {
   width: 100%;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
   font-family: inherit;
   font-size: 16px;
   color: var(--text);
   outline: none;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .form-group select {
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238b95a8'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 14px center;
-  padding-right: 40px;
+  background-position: right 16px center;
+  padding-right: 44px;
 }
 
 .form-group select option {
-  background: var(--surface);
+  background: var(--bg2);
   color: var(--text);
 }
 
@@ -799,6 +844,7 @@ header .header-date {
 .form-group textarea:focus,
 .form-group select:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .form-group textarea {
@@ -808,10 +854,9 @@ header .header-date {
 
 .form-group input::placeholder,
 .form-group textarea::placeholder {
-  color: rgba(255,255,255,0.25);
+  color: var(--text3);
 }
 
-/* Date/time row */
 .datetime-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -821,72 +866,71 @@ header .header-date {
 /* Priority selector */
 .priority-options {
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 
 .priority-option {
   flex: 1;
-  padding: 10px 8px;
-  border-radius: 12px;
-  border: 2px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03);
+  padding: 12px 8px;
+  border-radius: var(--radius-sm);
+  border: 2px solid rgba(255,255,255,0.06);
+  background: var(--surface);
   text-align: center;
   cursor: pointer;
   font-family: inherit;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
-  transition: all 0.2s ease;
+  color: var(--text2);
+  transition: all 0.25s ease;
 }
 
-.priority-option:hover {
-  border-color: rgba(255,255,255,0.15);
-}
+.priority-option:active { transform: scale(0.95); }
 
 .priority-option.selected.low {
   border-color: var(--low);
-  background: rgba(78,205,196,0.1);
+  background: rgba(0,184,148,0.1);
   color: var(--low);
+  box-shadow: 0 0 16px rgba(0,184,148,0.15);
 }
 
 .priority-option.selected.medium {
   border-color: var(--medium);
-  background: rgba(251,191,36,0.1);
+  background: rgba(253,203,110,0.1);
   color: var(--medium);
+  box-shadow: 0 0 16px rgba(253,203,110,0.15);
 }
 
 .priority-option.selected.high {
   border-color: var(--high);
-  background: rgba(248,113,113,0.1);
+  background: rgba(225,112,85,0.1);
   color: var(--high);
+  box-shadow: 0 0 16px rgba(225,112,85,0.15);
 }
 
-/* Category selector in modal */
+/* Category selector */
 .category-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
 }
 
 .category-option {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 2px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03);
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 2px solid rgba(255,255,255,0.06);
+  background: var(--surface);
   cursor: pointer;
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary);
-  transition: all 0.2s ease;
+  color: var(--text2);
+  transition: all 0.25s ease;
 }
 
-.category-option:hover {
-  border-color: rgba(255,255,255,0.15);
-}
+.category-option:active { transform: scale(0.95); }
 
 .category-option .cat-dot-modal {
   width: 10px;
@@ -897,32 +941,34 @@ header .header-date {
 
 .category-option.selected {
   border-color: var(--accent);
-  background: rgba(79,142,247,0.08);
+  background: rgba(108,92,231,0.08);
   color: var(--text);
+  box-shadow: 0 0 16px var(--accent-glow);
 }
 
 .save-btn {
   width: 100%;
   padding: 16px;
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
   border: none;
-  background: var(--accent);
+  background: var(--gradient1);
   color: #fff;
   font-family: inherit;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   margin-top: 8px;
-  transition: opacity 0.2s ease, transform 0.15s ease;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 4px 20px var(--accent-glow);
+  letter-spacing: 0.3px;
 }
 
-.save-btn:hover { opacity: 0.9; }
-.save-btn:active { transform: scale(0.98); }
+.save-btn:active { transform: scale(0.97); opacity: 0.9; }
 
 /* ── Toast ── */
 .toast-container {
   position: fixed;
-  top: 20px;
+  top: calc(16px + var(--safe-top));
   left: 50%;
   transform: translateX(-50%);
   z-index: 300;
@@ -931,22 +977,22 @@ header .header-date {
   align-items: center;
   gap: 8px;
   pointer-events: none;
-  width: calc(100% - 40px);
+  width: calc(100% - 48px);
   max-width: 400px;
 }
 
 .toast {
-  background: var(--surface);
-  border: 1px solid rgba(255,255,255,0.1);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 12px;
-  padding: 14px 20px;
+  background: var(--bg2);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius-sm);
+  padding: 14px 24px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-  animation: toastIn 0.35s ease, toastOut 0.35s ease 2.5s forwards;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  animation: toastIn 0.4s cubic-bezier(0.32,0.72,0,1), toastOut 0.4s ease 2.5s forwards;
   pointer-events: auto;
   text-align: center;
   width: 100%;
@@ -954,48 +1000,41 @@ header .header-date {
 
 /* ── Animations ── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes toastIn {
-  from { opacity: 0; transform: translateY(-16px); }
+  from { opacity: 0; transform: translateY(-20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes toastOut {
   from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 0; transform: translateY(-20px); }
 }
-
-/* ── Scrollbar ── */
-.list-container::-webkit-scrollbar { width: 4px; }
-.list-container::-webkit-scrollbar-track { background: transparent; }
-.list-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
 /* ── Tablet ── */
 @media (min-width: 600px) {
-  header { padding: 28px 28px 0; }
-  header h1 { font-size: 34px; }
-  .sort-bar { padding: 10px 28px 0; }
-  .notif-bar { padding: 10px 28px 0; }
-  .search-bar { padding: 0 28px; }
-  .search-bar.open { padding: 10px 28px 0; }
-  .tabs { padding: 14px 28px 0; }
-  .category-chips { padding: 10px 28px 0; }
-  .stats-bar { padding: 12px 28px 0; }
-  .list-container { padding: 12px 28px 120px; }
-  .card { padding: 20px 20px 20px 24px; }
-  .modal { padding: 28px 28px calc(28px + var(--safe-bottom)); }
-  .fab { bottom: calc(32px + var(--safe-bottom)); right: 32px; width: 64px; height: 64px; }
+  header { padding: calc(20px + var(--safe-top)) 32px 0; }
+  .header-left h1 { font-size: 38px; }
+  .stats-inline { padding: 16px 32px 0; }
+  .search-bar { padding: 0 32px; }
+  .search-bar.open { padding: 12px 32px 0; }
+  .notif-bar { padding: 12px 32px 0; }
+  .filter-row { padding: 16px 32px 0; }
+  .sort-row { padding: 14px 32px 0; }
+  .list-container { padding: 8px 32px calc(120px + var(--safe-bottom)); }
+  .card { padding: 22px 22px 22px 26px; }
+  .modal { padding: 24px 32px calc(28px + var(--safe-bottom)); border-radius: 32px 32px 0 0; }
+  .fab { bottom: calc(36px + var(--safe-bottom)); right: 36px; width: 68px; height: 68px; border-radius: 24px; }
 }
 
-/* color-scheme for native inputs */
 input[type="date"], input[type="time"] {
   color-scheme: dark;
 }
@@ -1004,12 +1043,11 @@ input[type="date"], input[type="time"] {
 <body>
 
 <div class="app">
-  <!-- Header -->
   <header>
     <div class="header-top">
-      <div>
+      <div class="header-left">
         <h1>Erinnerungen</h1>
-        <p class="header-date" id="headerDate"></p>
+        <p class="greeting" id="headerDate"></p>
       </div>
       <div class="header-actions">
         <button class="icon-btn" id="searchToggle" aria-label="Suche">
@@ -1019,44 +1057,41 @@ input[type="date"], input[type="time"] {
     </div>
   </header>
 
-  <!-- Sort Bar -->
-  <div class="sort-bar">
-    <span class="sort-label">Sortierung:</span>
-    <button class="sort-btn active" id="sortDate" data-sort="date">Datum ↑</button>
-    <button class="sort-btn" id="sortPriority" data-sort="priority">Priorität</button>
+  <!-- Stats Inline -->
+  <div class="stats-inline">
+    <div class="stat-pill"><span class="stat-dot" style="background:var(--accent2)"></span><span class="stat-num" id="statActive">0</span> Aktiv</div>
+    <div class="stat-pill"><span class="stat-dot" style="background:var(--high)"></span><span class="stat-num" id="statOverdue">0</span> Fällig</div>
+    <div class="stat-pill"><span class="stat-dot" style="background:var(--done)"></span><span class="stat-num" id="statDone">0</span> Erledigt</div>
   </div>
 
   <!-- Notification Bar -->
   <div class="notif-bar" id="notifBar">
-    <button id="notifBtn">🔔 Benachrichtigungen aktivieren</button>
+    <button id="notifBtn">Benachrichtigungen aktivieren</button>
   </div>
 
   <!-- Search Bar -->
   <div class="search-bar" id="searchBar">
-    <input type="text" id="searchInput" placeholder="Erinnerung suchen…" autocomplete="off">
+    <input type="text" id="searchInput" placeholder="Suchen..." autocomplete="off">
   </div>
 
-  <!-- Filter Tabs -->
-  <div class="tabs">
-    <button class="tab active" data-filter="all">Alle <span class="badge" id="badgeAll">0</span></button>
-    <button class="tab" data-filter="active">Aktiv <span class="badge" id="badgeActive">0</span></button>
-    <button class="tab" data-filter="done">Erledigt <span class="badge" id="badgeDone">0</span></button>
+  <!-- Filter Row -->
+  <div class="filter-row" id="filterRow">
+    <button class="filter-chip active" data-filter="all">Alle <span class="chip-count" id="badgeAll">0</span></button>
+    <button class="filter-chip" data-filter="active">Aktiv <span class="chip-count" id="badgeActive">0</span></button>
+    <button class="filter-chip" data-filter="done">Erledigt <span class="chip-count" id="badgeDone">0</span></button>
+    <button class="filter-chip" data-cat="privat"><span class="chip-dot" style="background:var(--cat-privat)"></span>Privat</button>
+    <button class="filter-chip" data-cat="arbeit"><span class="chip-dot" style="background:var(--cat-arbeit)"></span>Arbeit</button>
+    <button class="filter-chip" data-cat="hasi"><span class="chip-dot" style="background:var(--cat-hasi)"></span>Hasi</button>
+    <button class="filter-chip" data-cat="sonstiges"><span class="chip-dot" style="background:var(--cat-sonstiges)"></span>Sonstiges</button>
   </div>
 
-  <!-- Category Chips -->
-  <div class="category-chips">
-    <button class="chip active" data-cat="all">Alle</button>
-    <button class="chip" data-cat="privat"><span class="chip-dot" style="background:var(--cat-privat)"></span>Privat</button>
-    <button class="chip" data-cat="arbeit"><span class="chip-dot" style="background:var(--cat-arbeit)"></span>Arbeit</button>
-    <button class="chip" data-cat="hasi"><span class="chip-dot" style="background:var(--cat-hasi)"></span>Hasi Elektronic</button>
-    <button class="chip" data-cat="sonstiges"><span class="chip-dot" style="background:var(--cat-sonstiges)"></span>Sonstiges</button>
-  </div>
-
-  <!-- Stats Bar -->
-  <div class="stats-bar">
-    <div class="stat"><span class="stat-value" id="statActive">0</span>Aktiv</div>
-    <div class="stat"><span class="stat-value" id="statOverdue">0</span>Überfällig</div>
-    <div class="stat"><span class="stat-value" id="statDone">0</span>Erledigt</div>
+  <!-- Sort Row -->
+  <div class="sort-row">
+    <span class="section-title" id="sectionTitle">Alle Erinnerungen</span>
+    <button class="sort-toggle" id="sortToggle">
+      <svg viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
+      <span id="sortLabel">Datum</span>
+    </button>
   </div>
 
   <!-- Reminder List -->
@@ -1071,7 +1106,7 @@ input[type="date"], input[type="time"] {
 <!-- Modal Overlay -->
 <div class="modal-overlay" id="overlay"></div>
 
-<!-- Add/Edit Reminder Modal -->
+<!-- Modal -->
 <div class="modal" id="modal">
   <div class="modal-handle"></div>
   <h2 id="modalTitle">Neue Erinnerung</h2>
@@ -1083,7 +1118,7 @@ input[type="date"], input[type="time"] {
 
   <div class="form-group">
     <label>Notiz (optional)</label>
-    <textarea id="inputNote" placeholder="Details hinzufügen…"></textarea>
+    <textarea id="inputNote" placeholder="Details hinzufügen..."></textarea>
   </div>
 
   <div class="datetime-row">
@@ -1149,12 +1184,7 @@ const categoryColors = { privat: 'var(--cat-privat)', arbeit: 'var(--cat-arbeit)
 
 // ── State ──
 let reminders = JSON.parse(localStorage.getItem('reminders') || '[]');
-// Backward compat: add missing fields
-reminders = reminders.map(r => ({
-  recurrence: 'once',
-  category: 'privat',
-  ...r
-}));
+reminders = reminders.map(r => ({ recurrence: 'once', category: 'privat', ...r }));
 
 let filter = 'all';
 let categoryFilter = 'all';
@@ -1185,6 +1215,9 @@ const toasts = $('#toasts');
 const notifBar = $('#notifBar');
 const notifBtn = $('#notifBtn');
 
+// ── Platform detection ──
+const isAndroid = typeof Android !== 'undefined';
+
 // ── Init ──
 function init() {
   renderHeader();
@@ -1193,22 +1226,32 @@ function init() {
   render();
   startNotificationCheck();
 
-  // Tab clicks
-  $$('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      $$('.tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      filter = tab.dataset.filter;
+  // Filter chip clicks (status + category combined)
+  $$('.filter-chip[data-filter]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      $$('.filter-chip[data-filter]').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      filter = chip.dataset.filter;
+      // Reset category filter when changing status filter
+      categoryFilter = 'all';
+      $$('.filter-chip[data-cat]').forEach(c => c.classList.remove('active'));
+      updateSectionTitle();
       render();
     });
   });
 
   // Category chip clicks
-  $$('.chip').forEach(chip => {
+  $$('.filter-chip[data-cat]').forEach(chip => {
     chip.addEventListener('click', () => {
-      $$('.chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      categoryFilter = chip.dataset.cat;
+      const wasActive = chip.classList.contains('active');
+      $$('.filter-chip[data-cat]').forEach(c => c.classList.remove('active'));
+      if (wasActive) {
+        categoryFilter = 'all';
+      } else {
+        chip.classList.add('active');
+        categoryFilter = chip.dataset.cat;
+      }
+      updateSectionTitle();
       render();
     });
   });
@@ -1229,9 +1272,8 @@ function init() {
     });
   });
 
-  // Sort buttons
-  $('#sortDate').addEventListener('click', () => handleSort('date'));
-  $('#sortPriority').addEventListener('click', () => handleSort('priority'));
+  // Sort toggle
+  $('#sortToggle').addEventListener('click', handleSortToggle);
 
   // Search toggle
   $('#searchToggle').addEventListener('click', toggleSearch);
@@ -1243,12 +1285,11 @@ function init() {
     if (e.key === 'Escape') closeSearch();
   });
 
-  // FAB
+  // FAB & Modal
   fabBtn.addEventListener('click', () => openModal());
   overlay.addEventListener('click', closeModal);
   saveBtn.addEventListener('click', handleSave);
 
-  // Enter key in title input
   inputTitle.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleSave();
   });
@@ -1263,14 +1304,17 @@ function init() {
 
 function renderHeader() {
   const now = new Date();
-  const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-  $('#headerDate').textContent = now.toLocaleDateString('de-DE', opts);
+  const hour = now.getHours();
+  let greet = 'Guten Morgen';
+  if (hour >= 12 && hour < 18) greet = 'Guten Tag';
+  if (hour >= 18) greet = 'Guten Abend';
+  const opts = { weekday: 'long', day: 'numeric', month: 'long' };
+  $('#headerDate').textContent = greet + ' \u2022 ' + now.toLocaleDateString('de-DE', opts);
 }
 
 function updateNotifBar() {
-  if (!('Notification' in window) || Notification.permission === 'granted') {
-    notifBar.classList.add('hidden');
-  } else if (Notification.permission === 'denied') {
+  if (isAndroid) { notifBar.classList.add('hidden'); return; }
+  if (!('Notification' in window) || Notification.permission === 'granted' || Notification.permission === 'denied') {
     notifBar.classList.add('hidden');
   } else {
     notifBar.classList.remove('hidden');
@@ -1293,37 +1337,44 @@ function toTimeStr(d) {
 }
 
 // ── Sort ──
-function handleSort(field) {
-  if (sortBy === field) {
-    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+function handleSortToggle() {
+  if (sortBy === 'date') {
+    if (sortDir === 'asc') { sortDir = 'desc'; }
+    else { sortBy = 'priority'; sortDir = 'desc'; }
   } else {
-    sortBy = field;
-    sortDir = 'asc';
+    if (sortDir === 'desc') { sortDir = 'asc'; }
+    else { sortBy = 'date'; sortDir = 'asc'; }
   }
-  updateSortButtons();
+  updateSortLabel();
   render();
 }
 
-function updateSortButtons() {
-  const arrow = sortDir === 'asc' ? '↑' : '↓';
-  const dateBtn = $('#sortDate');
-  const prioBtn = $('#sortPriority');
+function updateSortLabel() {
+  const arrow = sortDir === 'asc' ? '\u2191' : '\u2193';
+  const label = sortBy === 'date' ? 'Datum' : 'Priorität';
+  $('#sortLabel').textContent = label + ' ' + arrow;
+}
 
-  dateBtn.classList.toggle('active', sortBy === 'date');
-  prioBtn.classList.toggle('active', sortBy === 'priority');
-
-  dateBtn.textContent = sortBy === 'date' ? `Datum ${arrow}` : 'Datum';
-  prioBtn.textContent = sortBy === 'priority' ? `Priorität ${arrow}` : 'Priorität';
+function updateSectionTitle() {
+  const el = $('#sectionTitle');
+  if (categoryFilter !== 'all') {
+    el.textContent = categoryLabels[categoryFilter] || 'Erinnerungen';
+  } else if (filter === 'active') {
+    el.textContent = 'Aktive Erinnerungen';
+  } else if (filter === 'done') {
+    el.textContent = 'Erledigte';
+  } else {
+    el.textContent = 'Alle Erinnerungen';
+  }
 }
 
 // ── Search ──
 function toggleSearch() {
-  if (searchOpen) {
-    closeSearch();
-  } else {
+  if (searchOpen) { closeSearch(); }
+  else {
     searchOpen = true;
     searchBar.classList.add('open');
-    setTimeout(() => searchInput.focus(), 300);
+    setTimeout(() => searchInput.focus(), 350);
   }
 }
 
@@ -1342,7 +1393,7 @@ function openModal(id) {
   if (editingId) {
     const r = reminders.find(r => r.id === editingId);
     if (!r) return;
-    modalTitle.textContent = 'Erinnerung bearbeiten';
+    modalTitle.textContent = 'Bearbeiten';
     saveBtn.textContent = 'Aktualisieren';
     inputTitle.value = r.title;
     inputNote.value = r.note || '';
@@ -1350,12 +1401,10 @@ function openModal(id) {
     inputTime.value = r.time;
     inputRecurrence.value = r.recurrence || 'once';
 
-    // Set priority
     $$('.priority-option').forEach(b => b.classList.remove('selected'));
     const prioBtn = $(`.priority-option[data-priority="${r.priority}"]`);
     if (prioBtn) prioBtn.classList.add('selected');
 
-    // Set category
     $$('.category-option').forEach(b => b.classList.remove('selected'));
     const catBtn = $(`.category-option[data-category="${r.category || 'privat'}"]`);
     if (catBtn) catBtn.classList.add('selected');
@@ -1367,7 +1416,7 @@ function openModal(id) {
 
   modal.classList.add('open');
   overlay.classList.add('open');
-  setTimeout(() => inputTitle.focus(), 350);
+  setTimeout(() => inputTitle.focus(), 400);
 }
 
 function closeModal() {
@@ -1388,13 +1437,14 @@ function resetForm() {
   $('.category-option[data-category="privat"]').classList.add('selected');
 }
 
-// ── Save / Update ──
+// ── Save ──
 function handleSave() {
   const title = inputTitle.value.trim();
   if (!title) {
     inputTitle.focus();
     inputTitle.style.borderColor = 'var(--high)';
-    setTimeout(() => inputTitle.style.borderColor = '', 1500);
+    inputTitle.style.boxShadow = '0 0 0 3px rgba(225,112,85,0.25)';
+    setTimeout(() => { inputTitle.style.borderColor = ''; inputTitle.style.boxShadow = ''; }, 1500);
     return;
   }
 
@@ -1418,9 +1468,10 @@ function handleSave() {
       r.recurrence = recurrence;
     }
     save();
+    if (isAndroid) scheduleAllAndroidNotifications();
     closeModal();
     render();
-    showToast('Erinnerung aktualisiert');
+    showToast('Aktualisiert');
   } else {
     const reminder = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
@@ -1437,25 +1488,25 @@ function handleSave() {
     };
     reminders.push(reminder);
     save();
+    if (isAndroid) scheduleAllAndroidNotifications();
     closeModal();
     render();
-    showToast('Erinnerung gespeichert');
+    showToast('Gespeichert');
   }
 }
 
 // ── Delete ──
 function deleteReminder(id) {
+  cancelAndroidNotification(id);
   reminders = reminders.filter(r => r.id !== id);
   notifiedIds.delete(id);
   save();
   render();
-  showToast('Erinnerung gelöscht');
+  showToast('Gelöscht');
 }
 
 // ── Edit ──
-function editReminder(id) {
-  openModal(id);
-}
+function editReminder(id) { openModal(id); }
 
 // ── Toggle done ──
 function toggleDone(id) {
@@ -1463,7 +1514,6 @@ function toggleDone(id) {
   if (!r) return;
 
   if (!r.done && r.recurrence && r.recurrence !== 'once') {
-    // Recurring: calculate next datetime instead of marking done
     const dt = new Date(r.datetime);
     switch (r.recurrence) {
       case 'daily': dt.setDate(dt.getDate() + 1); break;
@@ -1476,8 +1526,9 @@ function toggleDone(id) {
     r.done = false;
     notifiedIds.delete(r.id);
     save();
+    if (isAndroid) scheduleAllAndroidNotifications();
     render();
-    showToast('Nächste Erinnerung geplant');
+    showToast('Nächste geplant');
     return;
   }
 
@@ -1496,15 +1547,8 @@ function save() {
 function render() {
   const now = Date.now();
   let items = [...reminders];
+  items = items.map(r => ({ recurrence: 'once', category: 'privat', ...r }));
 
-  // Backward compat
-  items = items.map(r => ({
-    recurrence: 'once',
-    category: 'privat',
-    ...r
-  }));
-
-  // Search filter
   if (searchQuery) {
     items = items.filter(r =>
       r.title.toLowerCase().includes(searchQuery) ||
@@ -1512,21 +1556,15 @@ function render() {
     );
   }
 
-  // Status filter
   if (filter === 'active') items = items.filter(r => !r.done);
   if (filter === 'done') items = items.filter(r => r.done);
-
-  // Category filter
   if (categoryFilter !== 'all') {
     items = items.filter(r => (r.category || 'privat') === categoryFilter);
   }
 
-  // Sort
   const priorityWeight = { high: 3, medium: 2, low: 1 };
   items.sort((a, b) => {
-    // Done items always at the end
     if (a.done !== b.done) return a.done ? 1 : -1;
-
     if (sortBy === 'date') {
       return sortDir === 'asc' ? a.datetime - b.datetime : b.datetime - a.datetime;
     } else {
@@ -1535,7 +1573,7 @@ function render() {
     }
   });
 
-  // Update badges
+  // Badges & stats
   const allCount = reminders.length;
   const activeCount = reminders.filter(r => !r.done).length;
   const doneCount = reminders.filter(r => r.done).length;
@@ -1545,28 +1583,25 @@ function render() {
   $('#badgeActive').textContent = activeCount;
   $('#badgeDone').textContent = doneCount;
 
-  // Stats
-  $('#statActive').textContent = activeCount;
-  const statOverdue = $('#statOverdue');
-  statOverdue.textContent = overdueCount;
-  statOverdue.classList.toggle('overdue-count', overdueCount > 0);
+  const sa = $('#statActive'); sa.textContent = activeCount;
+  const so = $('#statOverdue'); so.textContent = overdueCount;
+  so.style.color = overdueCount > 0 ? 'var(--high)' : '';
   $('#statDone').textContent = doneCount;
 
   // Empty state
   if (items.length === 0) {
     let msg = 'Noch keine Erinnerungen';
-    let sub = 'Tippe auf + um deine erste Erinnerung zu erstellen';
-    if (filter === 'active') { msg = 'Alles erledigt!'; sub = 'Keine aktiven Erinnerungen vorhanden'; }
-    if (filter === 'done') { msg = 'Noch nichts erledigt'; sub = 'Erledigte Erinnerungen erscheinen hier'; }
-    if (searchQuery) { msg = 'Keine Ergebnisse'; sub = 'Versuche einen anderen Suchbegriff'; }
+    let sub = 'Tippe auf + um loszulegen';
+    if (filter === 'active') { msg = 'Alles erledigt!'; sub = 'Keine aktiven Erinnerungen'; }
+    if (filter === 'done') { msg = 'Noch nichts erledigt'; sub = 'Erledigte erscheinen hier'; }
+    if (searchQuery) { msg = 'Nicht gefunden'; sub = 'Versuche einen anderen Begriff'; }
 
     list.innerHTML = `
       <div class="empty-state">
-        <div class="icon">
+        <div class="empty-icon">
           <svg viewBox="0 0 24 24">
             <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
             <line x1="9" y1="21" x2="15" y2="21"/>
-            <line x1="10" y1="24" x2="14" y2="24"/>
           </svg>
         </div>
         <h2>${msg}</h2>
@@ -1602,10 +1637,10 @@ function render() {
                 <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 ${dateStr}, ${timeStr}
               </span>
-              <span class="priority-tag ${r.priority}">${priorityLabels[r.priority] || r.priority}</span>
+              <span class="priority-tag ${r.priority}">${priorityLabels[r.priority]}</span>
               <span class="cat-badge"><span class="cat-dot-sm" style="background:${catColor}"></span>${catLabel}</span>
-              ${isRecurring ? `<span class="recurrence-badge">🔁 ${recurrenceLabels[r.recurrence]}</span>` : ''}
-              ${isOverdue ? '<span class="overdue-badge">⚠️ Überfällig</span>' : ''}
+              ${isRecurring ? `<span class="recurrence-badge">\u21BB ${recurrenceLabels[r.recurrence]}</span>` : ''}
+              ${isOverdue ? '<span class="overdue-badge">\u26A0 Überfällig</span>' : ''}
             </div>
           </div>
           <div class="card-actions">
@@ -1658,10 +1693,9 @@ function attachSwipeListeners() {
     card.addEventListener('touchend', () => {
       isDragging = false;
       const diff = currentX - startX;
-      card.style.transition = 'transform 0.25s ease';
-
+      card.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
       if (diff < -threshold) {
-        card.style.transform = `translateX(-100%)`;
+        card.style.transform = 'translateX(-100%)';
         card.style.opacity = '0';
         setTimeout(() => deleteReminder(wrapper.dataset.id), 250);
       } else {
@@ -1675,6 +1709,7 @@ function attachSwipeListeners() {
 
 // ── Toast ──
 function showToast(message) {
+  if (isAndroid) { try { Android.showToast(message); } catch(e) {} return; }
   const toast = document.createElement('div');
   toast.className = 'toast';
   toast.textContent = message;
@@ -1682,33 +1717,70 @@ function showToast(message) {
   setTimeout(() => toast.remove(), 3000);
 }
 
+// ── Android Bridge ──
+function scheduleAllAndroidNotifications() {
+  if (!isAndroid) return;
+  const now = Date.now();
+  reminders.forEach(r => {
+    if (r.done || r.datetime <= now) return;
+    const prioLabel = priorityLabels[r.priority] || r.priority;
+    const body = r.note || (prioLabel + ' – Erinnerung fällig');
+    const numId = Math.abs(hashCode(r.id));
+    try { Android.scheduleNotification(numId, r.title, body, r.datetime); } catch(e) {}
+  });
+}
+
+function cancelAndroidNotification(id) {
+  if (!isAndroid) return;
+  try { Android.cancelNotification(Math.abs(hashCode(id))); } catch(e) {}
+}
+
+function hashCode(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash;
+}
+
 // ── Notifications ──
 function startNotificationCheck() {
   setInterval(checkReminders, 30000);
   checkReminders();
+  if (isAndroid) scheduleAllAndroidNotifications();
 }
 
 function checkReminders() {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const now = Date.now();
 
+  if (isAndroid) {
+    reminders.forEach(r => {
+      if (r.done || notifiedIds.has(r.id)) return;
+      if (r.datetime <= now) {
+        notifiedIds.add(r.id);
+        save();
+        try { Android.vibrate(300); } catch(e) {}
+      }
+    });
+    return;
+  }
+
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
   reminders.forEach(r => {
     if (r.done || notifiedIds.has(r.id)) return;
     if (r.datetime <= now) {
       notifiedIds.add(r.id);
       save();
-
-      const prioLabel = priorityLabels[r.priority] || r.priority;
-      new Notification(`⏰ ${r.title}`, {
-        body: r.note || `${prioLabel} – Erinnerung fällig`,
-        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔔</text></svg>',
+      new Notification('\u23F0 ' + r.title, {
+        body: r.note || (priorityLabels[r.priority] + ' – Erinnerung fällig'),
         tag: r.id
       });
     }
   });
 }
 
-// ── PWA Service Worker ──
+// ── PWA ──
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
