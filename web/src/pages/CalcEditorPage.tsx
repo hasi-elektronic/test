@@ -392,6 +392,7 @@ export default function CalcEditorPage() {
                                 updateRow("materials", i, {
                                   material: e.target.value,
                                   pricePerKg: mat && mat.price_per_kg > 0 ? mat.price_per_kg : m.pricePerKg,
+                                  ...(e.target.value && !m.qtyPerPiece ? { qtyPerPiece: 1 } : {}),
                                 });
                               }}
                             >
@@ -469,8 +470,22 @@ export default function CalcEditorPage() {
                           <td className={`${td} w-20`}><NumInput value={w.rate} onValue={(v) => updateRow("works", i, { rate: v })} /></td>
                           <td className={`${td} w-20`}><NumInput value={w.qtyPerPiece} onValue={(v) => updateRow("works", i, { qtyPerPiece: v })} /></td>
                           <td className={tdOut}>{fmtNum((w.qtyPerPiece || 0) * (data.batchQty || 0))}</td>
-                          <td className={`${td} w-28`}><MinutesSelect value={w.setupMin} onValue={(v) => updateRow("works", i, { setupMin: v })} /></td>
-                          <td className={`${td} w-32`}><MinutesSelect value={w.prodMin} onValue={(v) => updateRow("works", i, { prodMin: v })} /></td>
+                          <td className={`${td} w-28`}>
+                            <MinutesSelect
+                              value={w.setupMin}
+                              onValue={(v) =>
+                                updateRow("works", i, { setupMin: v, ...(v > 0 && !w.qtyPerPiece ? { qtyPerPiece: 1 } : {}) })
+                              }
+                            />
+                          </td>
+                          <td className={`${td} w-32`}>
+                            <MinutesSelect
+                              value={w.prodMin}
+                              onValue={(v) =>
+                                updateRow("works", i, { prodMin: v, ...(v > 0 && !w.qtyPerPiece ? { qtyPerPiece: 1 } : {}) })
+                              }
+                            />
+                          </td>
                           <td
                             className={`${tdOut} font-medium`}
                             title={result.workPrices[i] > 0 ? undefined : "Zählt erst, wenn St./Stück > 0 eingetragen ist"}
@@ -766,7 +781,12 @@ export default function CalcEditorPage() {
                         <tr key={i} className={isUsed.skWork(w) ? usedRow : undefined}>
                           <td className={td}><TextInput value={w.name} onChange={(e) => updateRow("skWorks", i, { name: e.target.value })} /></td>
                           <td className={`${td} w-24`}><NumInput value={w.qty} onValue={(v) => updateRow("skWorks", i, { qty: v })} /></td>
-                          <td className={`${td} w-28`}><NumInput value={w.hours} onValue={(v) => updateRow("skWorks", i, { hours: v })} /></td>
+                          <td className={`${td} w-28`}>
+                            <NumInput
+                              value={w.hours}
+                              onValue={(v) => updateRow("skWorks", i, { hours: v, ...(v > 0 && !w.qty ? { qty: 1 } : {}) })}
+                            />
+                          </td>
                           <td className={`${td} w-24`}><NumInput value={w.rate} onValue={(v) => updateRow("skWorks", i, { rate: v })} /></td>
                           <td className={`${tdOut} font-medium`}>{result.skWorkPrices[i] > 0 ? fmtEur(result.skWorkPrices[i]) : "–"}</td>
                           <td className={td}>
