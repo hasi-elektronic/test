@@ -6,8 +6,14 @@ import type {
   CalcData,
   CalcRow,
   Customer,
+  ExternalItem,
   Material,
+  MaterialItem,
+  ShippingItem,
   ShippingMaster,
+  SkMaterialItem,
+  SkWorkItem,
+  WorkItem,
 } from "../../../shared/types";
 import { CALC_TYPE_LABELS, STATUS_LABELS } from "../../../shared/types";
 import { fmtEur, fmtNum } from "../format";
@@ -22,10 +28,46 @@ function SectionSum({ label, value }: { label: string; value: number }) {
   );
 }
 
+// Checkbox im Karten-Kopf: nur Positionen mit Werten anzeigen
+function UsedFilter({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer whitespace-nowrap font-normal">
+      <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} className="accent-blue-600" />
+      nur verwendete
+    </label>
+  );
+}
+
+const isUsed = {
+  material: (m: MaterialItem) =>
+    !!(m.label || m.material || m.width || m.height || m.thickness || m.qtyPerPiece || m.pricePerKg),
+  work: (w: WorkItem) => (w.qtyPerPiece || 0) > 0 || (w.prodMin || 0) > 0,
+  external: (e: ExternalItem) => !!(e.name || e.supplier || e.price),
+  shipping: (s: ShippingItem) => !!(s.name || s.unitPrice || s.qty),
+  skMaterial: (m: SkMaterialItem) => (m.qty || 0) > 0,
+  skWork: (w: SkWorkItem) => (w.qty || 0) > 0 || (w.hours || 0) > 0,
+};
+
 const th = "text-left text-xs text-slate-400 uppercase font-medium px-2 py-1.5";
 const thR = "text-right text-xs text-slate-400 uppercase font-medium px-2 py-1.5";
 const td = "px-1 py-1";
 const tdOut = "px-2 py-1 text-right text-sm text-slate-700 whitespace-nowrap";
+const usedRow = "bg-blue-50/50";
+
+function RowButtons({ onCopy, onRemove }: { onCopy?: () => void; onRemove: () => void }) {
+  return (
+    <div className="flex items-center whitespace-nowrap">
+      {onCopy && (
+        <button onClick={onCopy} title="Zeile duplizieren" className="text-slate-300 hover:text-blue-600 px-0.5">
+          ⧉
+        </button>
+      )}
+      <button onClick={onRemove} title="Zeile löschen" className="text-slate-300 hover:text-red-500 px-0.5">
+        ×
+      </button>
+    </div>
+  );
+}
 
 export default function CalcEditorPage() {
   const { id } = useParams();
@@ -38,9 +80,21 @@ export default function CalcEditorPage() {
   const [shipMaster, setShipMaster] = useState<ShippingMaster[]>([]);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
 
+  // "nur verwendete"-Filter je Tabelle
+  const [hideMat, setHideMat] = useState(false);
+  const [hideWorks, setHideWorks] = useState(false);
+  const [hideExt, setHideExt] = useState(false);
+  const [hideShip, setHideShip] = useState(false);
+  const [hideSkMat, setHideSkMat] = useState(false);
+  const [hideSkWorks, setHideSkWorks] = useState(false);
+
+  const firstLoad = useRef(true);
+
   useEffect(() => {
+    firstLoad.current = true;
     Promise.all([
       api.get<CalcRow>(`/calculations/${id}`),
       api.get<Material[]>("/materials"),
@@ -52,8 +106,20 @@ export default function CalcEditorPage() {
       setMaterials(m.filter((x) => x.active));
       setCustomers(cu);
       setShipMaster(sh);
+      // Bei bestehenden Kalkulationen lange Vorlagen-Listen automatisch filtern
+      setHideWorks((c.data.works ?? []).some(isUsed.work));
+      setHideSkWorks((c.data.skWorks ?? []).some(isUsed.skWork));
+      setHideSkMat((c.data.skMaterials ?? []).some(isUsed.skMaterial));
     });
   }, [id]);
+
+  const densities = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const m of materials) map[m.name] = m.density;
+    return map;
+  }, [materials]);
+
+  const result = useMemo(() => (data ? calculate(data, densities) : null), [data, densities]);
 
   // Strg+S speichert
   const saveRef = useRef<() => void>(() => {});
@@ -68,13 +134,38 @@ export default function CalcEditorPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const densities = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const m of materials) map[m.name] = m.density;
-    return map;
-  }, [materials]);
+  // Warnung beim Verlassen mit ungespeicherten Änderungen
+  const dirtyRef = useRef(false);
+  dirtyRef.current = dirty;
+  useEffect(() => {
+    const onUnload = (e: BeforeUnloadEvent) => {
+      if (dirtyRef.current) e.preventDefault();
+    };
+    window.addEventListener("beforeunload", onUnload);
+    return () => window.removeEventListener("beforeunload", onUnload);
+  }, []);
 
-  const result = useMemo(() => (data ? calculate(data, densities) : null), [data, densities]);
+  // Autosave: 2,5s nach der letzten Änderung
+  const payloadKey = useMemo(
+    () =>
+      calc && data
+        ? JSON.stringify([
+            calc.title, calc.status, calc.customer_id, calc.customer_name,
+            calc.inquiry_no, calc.drawing_no, calc.calc_date, calc.offer_text, data,
+          ])
+        : "",
+    [calc, data]
+  );
+  useEffect(() => {
+    if (!payloadKey) return;
+    if (firstLoad.current) {
+      firstLoad.current = false;
+      return;
+    }
+    setDirty(true);
+    const t = setTimeout(() => saveRef.current(), 2500);
+    return () => clearTimeout(t);
+  }, [payloadKey]);
 
   if (!calc || !data || !result) return <Spinner />;
 
@@ -90,6 +181,11 @@ export default function CalcEditorPage() {
     upd({ [key]: [...(data[key] as any[]), row] } as any);
   const removeRow = <K extends keyof CalcData>(key: K, index: number) =>
     upd({ [key]: (data[key] as any[]).filter((_, i) => i !== index) } as any);
+  const duplicateRow = <K extends keyof CalcData>(key: K, index: number) => {
+    const arr = [...(data[key] as any[])];
+    arr.splice(index + 1, 0, { ...arr[index] });
+    upd({ [key]: arr } as any);
+  };
 
   const save = async () => {
     setSaving(true);
@@ -108,13 +204,13 @@ export default function CalcEditorPage() {
         data,
       });
       setSavedAt(new Date());
+      setDirty(false);
     } catch (e: any) {
       setError(e.message);
     } finally {
       setSaving(false);
     }
   };
-
   saveRef.current = save;
 
   // Excel-ähnliche Eingabe: Enter springt zum nächsten Feld, Shift+Enter zurück
@@ -142,6 +238,22 @@ export default function CalcEditorPage() {
 
   const isSk = data.type === "schallkabine" || data.type === "ventilator";
 
+  // Gefilterte Sichten mit Original-Index
+  const matRows = data.materials.map((m, i) => ({ m, i })).filter(({ m }) => !hideMat || isUsed.material(m));
+  const workRows = data.works.map((w, i) => ({ w, i })).filter(({ w }) => !hideWorks || isUsed.work(w));
+  const extRows = data.externals.map((e, i) => ({ e, i })).filter(({ e }) => !hideExt || isUsed.external(e));
+  const shipRows = data.shipping.map((s, i) => ({ s, i })).filter(({ s }) => !hideShip || isUsed.shipping(s));
+  const skMatRows = data.skMaterials.map((m, i) => ({ m, i })).filter(({ m }) => !hideSkMat || isUsed.skMaterial(m));
+  const skWorkRows = data.skWorks.map((w, i) => ({ w, i })).filter(({ w }) => !hideSkWorks || isUsed.skWork(w));
+
+  const saveState = saving ? (
+    <span className="text-xs text-slate-400">Speichert…</span>
+  ) : dirty ? (
+    <span className="text-xs text-amber-600">● ungespeichert</span>
+  ) : savedAt ? (
+    <span className="text-xs text-green-600">✓ Gespeichert {savedAt.toLocaleTimeString("de-DE")}</span>
+  ) : null;
+
   return (
     <div className="max-w-7xl space-y-5" onKeyDown={handleEnterNav}>
       {/* Kopfzeile */}
@@ -153,10 +265,10 @@ export default function CalcEditorPage() {
           <h1 className="text-2xl font-bold text-slate-800">
             {calc.title || "Neue Kalkulation"} <span className="text-slate-400 font-normal">V{calc.version}</span>
           </h1>
-          <div className="text-xs text-slate-400 mt-0.5">⏎ Enter = nächstes Feld · Shift+⏎ = zurück · Strg+S = Speichern</div>
+          <div className="text-xs text-slate-400 mt-0.5">⏎ Enter = nächstes Feld · Shift+⏎ = zurück · Strg+S = Speichern · Änderungen werden automatisch gespeichert</div>
         </div>
         <div className="flex items-center gap-2">
-          {savedAt && <span className="text-xs text-green-600">Gespeichert {savedAt.toLocaleTimeString("de-DE")}</span>}
+          {saveState}
           {error && <span className="text-xs text-red-600">{error}</span>}
           <Button variant="secondary" onClick={copyVersion}>⧉ Neue Version</Button>
           <Link
@@ -172,7 +284,7 @@ export default function CalcEditorPage() {
       <div className="grid xl:grid-cols-[1fr_320px] gap-5 items-start">
         <div className="space-y-5 min-w-0">
           {/* Stammdaten der Kalkulation */}
-          <Card title="Projektdaten">
+          <Card title="Projektdaten" collapsible>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <Field label="Bezeichnung / Titel">
                 <TextInput value={calc.title} onChange={(e) => updCalc({ title: e.target.value })} />
@@ -224,9 +336,14 @@ export default function CalcEditorPage() {
           {!isSk ? (
             <>
               {/* Material (Blech) */}
-              <Card title="Material (Blech)">
+              <Card
+                title="Material (Blech)"
+                collapsible
+                summary={fmtEur(result.materialSum)}
+                right={<UsedFilter value={hideMat} onChange={setHideMat} />}
+              >
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[820px]">
+                  <table className="w-full min-w-[840px]">
                     <thead>
                       <tr>
                         <th className={th}>Was</th>
@@ -242,8 +359,8 @@ export default function CalcEditorPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.materials.map((m, i) => (
-                        <tr key={i}>
+                      {matRows.map(({ m, i }) => (
+                        <tr key={i} className={isUsed.material(m) ? usedRow : undefined}>
                           <td className={`${td} w-36`}>
                             <TextInput value={m.label} onChange={(e) => updateRow("materials", i, { label: e.target.value })} />
                           </td>
@@ -272,7 +389,7 @@ export default function CalcEditorPage() {
                           <td className={`${td} w-20`}><NumInput value={m.pricePerKg} onValue={(v) => updateRow("materials", i, { pricePerKg: v })} /></td>
                           <td className={`${tdOut} font-medium`}>{fmtEur(result.materialPrices[i])}</td>
                           <td className={td}>
-                            <button onClick={() => removeRow("materials", i)} className="text-slate-300 hover:text-red-500">×</button>
+                            <RowButtons onCopy={() => duplicateRow("materials", i)} onRemove={() => removeRow("materials", i)} />
                           </td>
                         </tr>
                       ))}
@@ -281,7 +398,10 @@ export default function CalcEditorPage() {
                 </div>
                 <Button
                   variant="ghost"
-                  onClick={() => addRow("materials", { label: "", material: "", width: 0, height: 0, thickness: 0, qtyPerPiece: 0, pricePerKg: 0 })}
+                  onClick={() => {
+                    setHideMat(false);
+                    addRow("materials", { label: "", material: "", width: 0, height: 0, thickness: 0, qtyPerPiece: 0, pricePerKg: 0 });
+                  }}
                 >
                   + Zeile
                 </Button>
@@ -300,7 +420,12 @@ export default function CalcEditorPage() {
               </Card>
 
               {/* Arbeitszeit */}
-              <Card title="Arbeitszeit / Fertigung">
+              <Card
+                title="Arbeitszeit / Fertigung"
+                collapsible
+                summary={fmtEur(result.prodSum)}
+                right={<UsedFilter value={hideWorks} onChange={setHideWorks} />}
+              >
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[760px]">
                     <thead>
@@ -316,8 +441,8 @@ export default function CalcEditorPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.works.map((w, i) => (
-                        <tr key={i}>
+                      {workRows.map(({ w, i }) => (
+                        <tr key={i} className={isUsed.work(w) ? usedRow : undefined}>
                           <td className={`${td} w-56`}>
                             <TextInput value={w.name} onChange={(e) => updateRow("works", i, { name: e.target.value })} />
                           </td>
@@ -328,14 +453,23 @@ export default function CalcEditorPage() {
                           <td className={`${td} w-24`}><NumInput value={w.prodMin} onValue={(v) => updateRow("works", i, { prodMin: v })} /></td>
                           <td className={`${tdOut} font-medium`}>{result.workPrices[i] > 0 ? fmtEur(result.workPrices[i]) : "–"}</td>
                           <td className={td}>
-                            <button onClick={() => removeRow("works", i)} className="text-slate-300 hover:text-red-500">×</button>
+                            <RowButtons onRemove={() => removeRow("works", i)} />
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <Button variant="ghost" onClick={() => addRow("works", { name: "", rate: 58, qtyPerPiece: 0, setupMin: 0, prodMin: 0 })}>
+                {hideWorks && workRows.length < data.works.length && (
+                  <p className="text-xs text-slate-400 mt-1">{data.works.length - workRows.length} leere Arbeitsgänge ausgeblendet – Haken oben entfernen zum Anzeigen.</p>
+                )}
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setHideWorks(false);
+                    addRow("works", { name: "", rate: 58, qtyPerPiece: 0, setupMin: 0, prodMin: 0 });
+                  }}
+                >
                   + Arbeitsgang
                 </Button>
                 <div className="grid sm:grid-cols-3 gap-3 mt-3">
@@ -350,7 +484,12 @@ export default function CalcEditorPage() {
               </Card>
 
               {/* Externe Bearbeitung */}
-              <Card title="Externe Bearbeitung / Zukaufsteile">
+              <Card
+                title="Externe Bearbeitung / Zukaufsteile"
+                collapsible
+                summary={fmtEur(result.extSum)}
+                right={<UsedFilter value={hideExt} onChange={setHideExt} />}
+              >
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[680px]">
                     <thead>
@@ -365,8 +504,8 @@ export default function CalcEditorPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.externals.map((e, i) => (
-                        <tr key={i}>
+                      {extRows.map(({ e, i }) => (
+                        <tr key={i} className={isUsed.external(e) ? usedRow : undefined}>
                           <td className={td}><TextInput value={e.name} onChange={(ev) => updateRow("externals", i, { name: ev.target.value })} /></td>
                           <td className={`${td} w-40`}><TextInput value={e.supplier} onChange={(ev) => updateRow("externals", i, { supplier: ev.target.value })} /></td>
                           <td className={`${td} w-32`}><TextInput value={e.offerNo} onChange={(ev) => updateRow("externals", i, { offerNo: ev.target.value })} /></td>
@@ -381,14 +520,20 @@ export default function CalcEditorPage() {
                           </td>
                           <td className={`${tdOut} font-medium`}>{fmtEur(result.extPrices[i])}</td>
                           <td className={td}>
-                            <button onClick={() => removeRow("externals", i)} className="text-slate-300 hover:text-red-500">×</button>
+                            <RowButtons onRemove={() => removeRow("externals", i)} />
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <Button variant="ghost" onClick={() => addRow("externals", { name: "", supplier: "", offerNo: "", price: 0, perPiece: false })}>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setHideExt(false);
+                    addRow("externals", { name: "", supplier: "", offerNo: "", price: 0, perPiece: false });
+                  }}
+                >
                   + Zeile
                 </Button>
                 <div className="grid sm:grid-cols-3 gap-3 mt-3">
@@ -400,7 +545,12 @@ export default function CalcEditorPage() {
               </Card>
 
               {/* Versand */}
-              <Card title="Versandkosten">
+              <Card
+                title="Versandkosten"
+                collapsible
+                summary={fmtEur(result.shipSum)}
+                right={<UsedFilter value={hideShip} onChange={setHideShip} />}
+              >
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[620px]">
                     <thead>
@@ -414,8 +564,8 @@ export default function CalcEditorPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.shipping.map((s, i) => (
-                        <tr key={i}>
+                      {shipRows.map(({ s, i }) => (
+                        <tr key={i} className={isUsed.shipping(s) ? usedRow : undefined}>
                           <td className={`${td} w-32`}>
                             <Select value={s.kind} onChange={(e) => updateRow("shipping", i, { kind: e.target.value })}>
                               <option value="fahrzeug">Fahrzeug</option>
@@ -451,14 +601,20 @@ export default function CalcEditorPage() {
                           <td className={`${td} w-24`}><NumInput value={s.qty} onValue={(v) => updateRow("shipping", i, { qty: v })} /></td>
                           <td className={`${tdOut} font-medium`}>{fmtEur(result.shipPrices[i])}</td>
                           <td className={td}>
-                            <button onClick={() => removeRow("shipping", i)} className="text-slate-300 hover:text-red-500">×</button>
+                            <RowButtons onRemove={() => removeRow("shipping", i)} />
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <Button variant="ghost" onClick={() => addRow("shipping", { kind: "verpackung", name: "", unitPrice: 0, qty: 0 })}>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setHideShip(false);
+                    addRow("shipping", { kind: "verpackung", name: "", unitPrice: 0, qty: 0 });
+                  }}
+                >
                   + Zeile
                 </Button>
                 <div className="grid sm:grid-cols-3 gap-3 mt-3">
@@ -473,7 +629,7 @@ export default function CalcEditorPage() {
             <>
               {/* Flächenberechnung (nur Schallkabine) */}
               {data.type === "schallkabine" && (
-              <Card title="Flächenberechnung">
+              <Card title="Flächenberechnung" collapsible summary={`${fmtNum(result.areaTotal)} m²`}>
                 <div className="grid sm:grid-cols-2 gap-2">
                   {data.areas.map((a, i) => (
                     <div key={i} className="flex gap-2 items-center">
@@ -497,9 +653,14 @@ export default function CalcEditorPage() {
               )}
 
               {/* Zuschlagskalkulation: Material */}
-              <Card title="Materialkosten">
+              <Card
+                title="Materialkosten"
+                collapsible
+                summary={fmtEur(result.materialSum)}
+                right={<UsedFilter value={hideSkMat} onChange={setHideSkMat} />}
+              >
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[820px]">
+                  <table className="w-full min-w-[840px]">
                     <thead>
                       <tr>
                         <th className={th}>Kommentar</th>
@@ -514,8 +675,8 @@ export default function CalcEditorPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.skMaterials.map((m, i) => (
-                        <tr key={i}>
+                      {skMatRows.map(({ m, i }) => (
+                        <tr key={i} className={isUsed.skMaterial(m) ? usedRow : undefined}>
                           <td className={`${td} w-32`}><TextInput value={m.comment} onChange={(e) => updateRow("skMaterials", i, { comment: e.target.value })} /></td>
                           <td className={td}><TextInput value={m.name} onChange={(e) => updateRow("skMaterials", i, { name: e.target.value })} /></td>
                           <td className={`${td} w-32`}><TextInput value={m.supplier} onChange={(e) => updateRow("skMaterials", i, { supplier: e.target.value })} /></td>
@@ -525,16 +686,22 @@ export default function CalcEditorPage() {
                           <td className={tdOut}>{fmtEur(result.skMatBase[i])}</td>
                           <td className={`${tdOut} font-medium`}>{fmtEur(result.skMatPrices[i])}</td>
                           <td className={td}>
-                            <button onClick={() => removeRow("skMaterials", i)} className="text-slate-300 hover:text-red-500">×</button>
+                            <RowButtons onCopy={() => duplicateRow("skMaterials", i)} onRemove={() => removeRow("skMaterials", i)} />
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+                {hideSkMat && skMatRows.length < data.skMaterials.length && (
+                  <p className="text-xs text-slate-400 mt-1">{data.skMaterials.length - skMatRows.length} leere Positionen ausgeblendet – Haken oben entfernen zum Anzeigen.</p>
+                )}
                 <Button
                   variant="ghost"
-                  onClick={() => addRow("skMaterials", { comment: "", name: "", supplier: "", qty: 0, amount: 0, unitPrice: 0 })}
+                  onClick={() => {
+                    setHideSkMat(false);
+                    addRow("skMaterials", { comment: "", name: "", supplier: "", qty: 0, amount: 0, unitPrice: 0 });
+                  }}
                 >
                   + Zeile
                 </Button>
@@ -550,8 +717,13 @@ export default function CalcEditorPage() {
                 <SectionSum label="Materialkosten" value={result.materialSum} />
               </Card>
 
-              {/* Schallkabine: Fertigung */}
-              <Card title="Fertigungskosten">
+              {/* Zuschlagskalkulation: Fertigung */}
+              <Card
+                title="Fertigungskosten"
+                collapsible
+                summary={fmtEur(result.prodSum)}
+                right={<UsedFilter value={hideSkWorks} onChange={setHideSkWorks} />}
+              >
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[640px]">
                     <thead>
@@ -565,22 +737,31 @@ export default function CalcEditorPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.skWorks.map((w, i) => (
-                        <tr key={i}>
+                      {skWorkRows.map(({ w, i }) => (
+                        <tr key={i} className={isUsed.skWork(w) ? usedRow : undefined}>
                           <td className={td}><TextInput value={w.name} onChange={(e) => updateRow("skWorks", i, { name: e.target.value })} /></td>
                           <td className={`${td} w-24`}><NumInput value={w.qty} onValue={(v) => updateRow("skWorks", i, { qty: v })} /></td>
                           <td className={`${td} w-28`}><NumInput value={w.hours} onValue={(v) => updateRow("skWorks", i, { hours: v })} /></td>
                           <td className={`${td} w-24`}><NumInput value={w.rate} onValue={(v) => updateRow("skWorks", i, { rate: v })} /></td>
                           <td className={`${tdOut} font-medium`}>{result.skWorkPrices[i] > 0 ? fmtEur(result.skWorkPrices[i]) : "–"}</td>
                           <td className={td}>
-                            <button onClick={() => removeRow("skWorks", i)} className="text-slate-300 hover:text-red-500">×</button>
+                            <RowButtons onRemove={() => removeRow("skWorks", i)} />
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <Button variant="ghost" onClick={() => addRow("skWorks", { name: "", qty: 0, hours: 0, rate: 58 })}>
+                {hideSkWorks && skWorkRows.length < data.skWorks.length && (
+                  <p className="text-xs text-slate-400 mt-1">{data.skWorks.length - skWorkRows.length} leere Arbeitsgänge ausgeblendet – Haken oben entfernen zum Anzeigen.</p>
+                )}
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setHideSkWorks(false);
+                    addRow("skWorks", { name: "", qty: 0, hours: 0, rate: 58 });
+                  }}
+                >
                   + Arbeitsgang
                 </Button>
                 <div className="grid sm:grid-cols-3 gap-3 mt-3">
@@ -597,7 +778,7 @@ export default function CalcEditorPage() {
           )}
 
           {/* Angebotstext */}
-          <Card title="Angebotstext">
+          <Card title="Angebotstext" collapsible>
             <textarea
               value={calc.offer_text}
               onChange={(e) => updCalc({ offer_text: e.target.value })}
