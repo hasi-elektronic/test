@@ -48,6 +48,26 @@ const isUsed = {
   skWork: (w: SkWorkItem) => (w.qty || 0) > 0 || (w.hours || 0) > 0,
 };
 
+// Zeitauswahl in 15-Minuten-Schritten (+ 5/10 min für kurze Rüstzeiten)
+const MINUTE_STEPS = [0, 5, 10, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 210, 240, 270, 300, 330, 360, 420, 480, 540, 600];
+
+function minuteLabel(m: number): string {
+  if (m === 0) return "–";
+  if (m < 60) return `${m} min`;
+  return `${m} min (${fmtNum(m / 60)} h)`;
+}
+
+function MinutesSelect({ value, onValue }: { value: number; onValue: (v: number) => void }) {
+  const opts = MINUTE_STEPS.includes(value) ? MINUTE_STEPS : [...MINUTE_STEPS, value].sort((a, b) => a - b);
+  return (
+    <Select value={value} onChange={(e) => onValue(Number(e.target.value))}>
+      {opts.map((m) => (
+        <option key={m} value={m}>{minuteLabel(m)}</option>
+      ))}
+    </Select>
+  );
+}
+
 const th = "text-left text-xs text-slate-400 uppercase font-medium px-2 py-1.5";
 const thR = "text-right text-xs text-slate-400 uppercase font-medium px-2 py-1.5";
 const td = "px-1 py-1";
@@ -449,9 +469,14 @@ export default function CalcEditorPage() {
                           <td className={`${td} w-20`}><NumInput value={w.rate} onValue={(v) => updateRow("works", i, { rate: v })} /></td>
                           <td className={`${td} w-20`}><NumInput value={w.qtyPerPiece} onValue={(v) => updateRow("works", i, { qtyPerPiece: v })} /></td>
                           <td className={tdOut}>{fmtNum((w.qtyPerPiece || 0) * (data.batchQty || 0))}</td>
-                          <td className={`${td} w-20`}><NumInput value={w.setupMin} onValue={(v) => updateRow("works", i, { setupMin: v })} /></td>
-                          <td className={`${td} w-24`}><NumInput value={w.prodMin} onValue={(v) => updateRow("works", i, { prodMin: v })} /></td>
-                          <td className={`${tdOut} font-medium`}>{result.workPrices[i] > 0 ? fmtEur(result.workPrices[i]) : "–"}</td>
+                          <td className={`${td} w-28`}><MinutesSelect value={w.setupMin} onValue={(v) => updateRow("works", i, { setupMin: v })} /></td>
+                          <td className={`${td} w-32`}><MinutesSelect value={w.prodMin} onValue={(v) => updateRow("works", i, { prodMin: v })} /></td>
+                          <td
+                            className={`${tdOut} font-medium`}
+                            title={result.workPrices[i] > 0 ? undefined : "Zählt erst, wenn St./Stück > 0 eingetragen ist"}
+                          >
+                            {result.workPrices[i] > 0 ? fmtEur(result.workPrices[i]) : "–"}
+                          </td>
                           <td className={td}>
                             <RowButtons onRemove={() => removeRow("works", i)} />
                           </td>
