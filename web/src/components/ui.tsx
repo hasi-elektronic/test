@@ -72,7 +72,10 @@ export function NumInput({
       {...props}
       inputMode="decimal"
       value={text}
-      onFocus={() => setFocused(true)}
+      onFocus={(e) => {
+        setFocused(true);
+        e.target.select();
+      }}
       onBlur={() => setFocused(false)}
       onChange={(e) => {
         const t = e.target.value;
