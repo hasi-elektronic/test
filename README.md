@@ -1,17 +1,17 @@
 # Sickinger Kalkulationssystem
 
 Modernes Web-Kalkulationssystem für Metallverarbeitung – ersetzt die Excel-Kalkulationen
-für **Laufräder, Drückteile, Baugruppen und Schallkabinen**.
+für **Laufräder, Drückteile, Baugruppen, Schallkabinen und Ventilatoren**.
 
 Läuft komplett auf **Cloudflare Workers** mit **D1-Datenbank** (SQLite), Deployment per GitHub Actions.
 
 ## Funktionen
 
-- 🧮 **4 Kalkulationstypen** mit den Original-Formeln aus den Excel-Dateien:
+- 🧮 **5 Kalkulationstypen** mit den Original-Formeln aus den Excel-Dateien:
   - **Laufrad / Drückteile / Baugruppe**: Material nach Kg (Breite × Höhe × Dicke × Dichte),
     Arbeitsgänge mit Rüst- und Fertigungszeit, externe Bearbeitung, Versandkosten, Gewinnzuschlag
-  - **Schallkabine**: Zuschlagskalkulation – Material nach m²/Kg mit Verschnitt-Zuschlag,
-    stundenbasierte Fertigung, Flächenberechnung
+  - **Schallkabine / Ventilator**: Zuschlagskalkulation – Material nach m²/Kg mit
+    Verschnitt-Zuschlag, stundenbasierte Fertigung (Schallkabine zusätzlich mit Flächenberechnung)
 - ⚡ **Live-Berechnung** beim Tippen – Endpreis-Panel immer sichtbar
 - 🗂️ **Stammdaten** in der Datenbank: Materialliste (Dichte, Preis/Kg), Arbeitsgänge mit
   Stundensätzen je Kalkulationstyp, Versand- & Verpackungspreise, Kunden (inkl.

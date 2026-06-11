@@ -219,13 +219,14 @@ crud(
 crud(
   "material_presets",
   [
+    { name: "calc_type" },
     { name: "pos", numeric: true },
     { name: "name" },
     { name: "comment" },
     { name: "supplier" },
     { name: "unit_price", numeric: true },
   ],
-  "pos, name"
+  "calc_type, pos, name"
 );
 
 crud(
@@ -450,8 +451,12 @@ app.get("/templates", async (c) => {
     .bind(type)
     .all();
   let presets: unknown[] = [];
-  if (type === "schallkabine") {
-    const { results } = await c.env.DB.prepare("SELECT * FROM material_presets ORDER BY pos").all();
+  if (type === "schallkabine" || type === "ventilator") {
+    const { results } = await c.env.DB.prepare(
+      "SELECT * FROM material_presets WHERE calc_type = ? ORDER BY pos"
+    )
+      .bind(type)
+      .all();
     presets = results;
   }
   return c.json({ steps, presets });

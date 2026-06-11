@@ -1,6 +1,6 @@
 // Gemeinsame Typen für Worker (API) und Web-Frontend
 
-export type CalcType = "laufrad" | "drueckteile" | "baugruppe" | "schallkabine";
+export type CalcType = "laufrad" | "drueckteile" | "baugruppe" | "schallkabine" | "ventilator";
 
 export type CalcStatus = "entwurf" | "angebot" | "auftrag" | "abgeschlossen" | "abgelehnt";
 
@@ -9,7 +9,11 @@ export const CALC_TYPE_LABELS: Record<CalcType, string> = {
   drueckteile: "Drückteile",
   baugruppe: "Baugruppe",
   schallkabine: "Schallkabine",
+  ventilator: "Ventilator",
 };
+
+// Typen mit Zuschlagskalkulation (m²/Kg-Material + stundenbasierte Fertigung)
+export const ZUSCHLAG_TYPES: CalcType[] = ["schallkabine", "ventilator"];
 
 export const STATUS_LABELS: Record<CalcStatus, string> = {
   entwurf: "Entwurf",
