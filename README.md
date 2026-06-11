@@ -32,14 +32,12 @@ Läuft komplett auf **Cloudflare Workers** mit **D1-Datenbank** (SQLite), Deploy
 
 ## Deployment (GitHub Actions → Cloudflare)
 
-Jeder Push auf `main` deployt automatisch. Einmalige Einrichtung – zwei Secrets im
+Jeder Push auf `main` deployt automatisch. Einmalige Einrichtung – ein Secret im
 GitHub-Repository anlegen (**Settings → Secrets and variables → Actions**):
 
-1. **`CLOUDFLARE_API_TOKEN`** – Cloudflare Dashboard → My Profile → API Tokens →
-   „Create Token" → Vorlage **„Edit Cloudflare Workers"** (benötigt zusätzlich
-   D1-Berechtigung: *Account / D1 / Edit*)
-2. **`CLOUDFLARE_ACCOUNT_ID`** – Cloudflare Dashboard → Workers & Pages → rechts
-   in der Seitenleiste „Account ID"
+- **`CLOUDFLARE_API_TOKEN`** – Cloudflare Dashboard → My Profile → API Tokens →
+  „Create Token" → Vorlage **„Edit Cloudflare Workers"** (benötigt zusätzlich
+  D1-Berechtigung: *Account / D1 / Edit*)
 
 Die App ist danach unter `https://sickinger-kalkulation.<dein-subdomain>.workers.dev` erreichbar.
 
