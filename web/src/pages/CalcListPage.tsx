@@ -16,6 +16,7 @@ interface Row {
   inquiry_no: string;
   drawing_no: string;
   calc_date: string;
+  sachbearbeiter: string;
   sales_total: number;
   sales_unit: number;
   updated_at: string;
@@ -116,7 +117,13 @@ export default function CalcListPage() {
                       {r.title || "(ohne Titel)"}
                     </Link>{" "}
                     <span className="text-xs text-slate-400">V{r.version}</span>
-                    {r.drawing_no && <div className="text-xs text-slate-400">Zeichn. {r.drawing_no}</div>}
+                    {(r.drawing_no || r.sachbearbeiter) && (
+                      <div className="text-xs text-slate-400">
+                        {r.drawing_no && <>Zeichn. {r.drawing_no}</>}
+                        {r.drawing_no && r.sachbearbeiter && " · "}
+                        {r.sachbearbeiter && <>SB: {r.sachbearbeiter}</>}
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-2.5 text-slate-600">{(CALC_TYPE_LABELS as any)[r.calc_type] ?? r.calc_type}</td>
                   <td className="px-4 py-2.5 text-slate-600">{r.customer_name}</td>

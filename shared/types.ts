@@ -151,6 +151,7 @@ export interface CalcRow {
   inquiry_no: string;
   drawing_no: string;
   calc_date: string;
+  sachbearbeiter: string;
   data: CalcData;
   offer_text: string;
   material_sum: number;
@@ -224,6 +225,12 @@ export interface Customer {
   phone: string;
   special_terms: string;
   notes: string;
+}
+
+export interface Sachbearbeiter {
+  id: number;
+  name: string;
+  kuerzel: string;
 }
 
 export interface Supplier {

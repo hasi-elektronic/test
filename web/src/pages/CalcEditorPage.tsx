@@ -9,6 +9,7 @@ import type {
   ExternalItem,
   Material,
   MaterialItem,
+  Sachbearbeiter,
   ShippingItem,
   ShippingMaster,
   SkMaterialItem,
@@ -98,6 +99,7 @@ export default function CalcEditorPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [shipMaster, setShipMaster] = useState<ShippingMaster[]>([]);
+  const [bearbeiter, setBearbeiter] = useState<Sachbearbeiter[]>([]);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -120,12 +122,14 @@ export default function CalcEditorPage() {
       api.get<Material[]>("/materials"),
       api.get<Customer[]>("/customers"),
       api.get<ShippingMaster[]>("/shipping_items"),
-    ]).then(([c, m, cu, sh]) => {
+      api.get<Sachbearbeiter[]>("/sachbearbeiter"),
+    ]).then(([c, m, cu, sh, sb]) => {
       setCalc(c);
       setData(c.data);
       setMaterials(m.filter((x) => x.active));
       setCustomers(cu);
       setShipMaster(sh);
+      setBearbeiter(sb);
       // Bei bestehenden Kalkulationen lange Vorlagen-Listen automatisch filtern
       setHideWorks((c.data.works ?? []).some(isUsed.work));
       setHideSkWorks((c.data.skWorks ?? []).some(isUsed.skWork));
@@ -220,6 +224,7 @@ export default function CalcEditorPage() {
         inquiry_no: calc.inquiry_no,
         drawing_no: calc.drawing_no,
         calc_date: calc.calc_date,
+        sachbearbeiter: calc.sachbearbeiter,
         offer_text: calc.offer_text,
         data,
       });
@@ -339,6 +344,16 @@ export default function CalcEditorPage() {
               </Field>
               <Field label="Datum">
                 <TextInput type="date" value={calc.calc_date} onChange={(e) => updCalc({ calc_date: e.target.value })} />
+              </Field>
+              <Field label="Sachbearbeiter">
+                <Select value={calc.sachbearbeiter ?? ""} onChange={(e) => updCalc({ sachbearbeiter: e.target.value })}>
+                  <option value="">– wählen –</option>
+                  {bearbeiter.map((b) => (
+                    <option key={b.id} value={b.kuerzel || b.name}>
+                      {b.name} {b.kuerzel && `(${b.kuerzel})`}
+                    </option>
+                  ))}
+                </Select>
               </Field>
               {!isSk && (
                 <Field label="Kalkulationsstückzahl">
