@@ -8,6 +8,7 @@ const TYPES: { type: CalcType; icon: string; title: string; desc: string }[] = [
   { type: "drueckteile", icon: "⚙️", title: "Drückteile", desc: "Drückteile: Drücken, Abschneiden, Abbrennen – gleiche Kalkulationslogik wie Laufrad." },
   { type: "baugruppe", icon: "🔩", title: "Baugruppe", desc: "Baugruppen / Schweißkonstruktionen: Biegen, Heften, Schweißen, Mechanik." },
   { type: "schallkabine", icon: "🔇", title: "Schallkabine", desc: "Zuschlagskalkulation: Material nach m²/Kg mit Verschnitt-Zuschlag, stundenbasierte Fertigung, Angebotstext." },
+  { type: "ventilator", icon: "💨", title: "Ventilator", desc: "Komplette Ventilatoren: alle Bauteile (Gehäuse, Bock, Laufrad, Düse…) mit Verschnitt-Zuschlag, stundenbasierte Fertigung nach Baugruppen." },
 ];
 
 export default function NewCalcPage() {
@@ -17,7 +18,7 @@ export default function NewCalcPage() {
     const tpl = await api.get<{ steps: StepTemplate[]; presets: MaterialPreset[] }>(`/templates?type=${type}`);
     const data: CalcData = emptyCalcData(type);
 
-    if (type === "schallkabine") {
+    if (type === "schallkabine" || type === "ventilator") {
       data.skWorks = tpl.steps.map((s) => ({ name: s.name, qty: 0, hours: 0, rate: s.rate }));
       data.skMaterials = tpl.presets.map((p) => ({
         comment: p.comment,
@@ -27,7 +28,7 @@ export default function NewCalcPage() {
         amount: 0,
         unitPrice: p.unit_price,
       }));
-      data.areas = Array.from({ length: 4 }, () => ({ label: "", value: 0 }));
+      data.areas = type === "schallkabine" ? Array.from({ length: 4 }, () => ({ label: "", value: 0 })) : [];
     } else {
       data.materials = Array.from({ length: 6 }, () => ({
         label: "",

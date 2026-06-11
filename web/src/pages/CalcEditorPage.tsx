@@ -109,7 +109,7 @@ export default function CalcEditorPage() {
     window.location.reload();
   };
 
-  const isSk = data.type === "schallkabine";
+  const isSk = data.type === "schallkabine" || data.type === "ventilator";
 
   return (
     <div className="max-w-7xl space-y-5">
@@ -439,7 +439,8 @@ export default function CalcEditorPage() {
             </>
           ) : (
             <>
-              {/* Schallkabine: Flächenberechnung */}
+              {/* Flächenberechnung (nur Schallkabine) */}
+              {data.type === "schallkabine" && (
               <Card title="Flächenberechnung">
                 <div className="grid sm:grid-cols-2 gap-2">
                   {data.areas.map((a, i) => (
@@ -461,8 +462,9 @@ export default function CalcEditorPage() {
                   <span className="text-sm font-semibold text-slate-700">Gesamt: {fmtNum(result.areaTotal)} m²</span>
                 </div>
               </Card>
+              )}
 
-              {/* Schallkabine: Material */}
+              {/* Zuschlagskalkulation: Material */}
               <Card title="Materialkosten">
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[820px]">

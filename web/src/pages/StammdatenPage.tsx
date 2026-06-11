@@ -122,7 +122,7 @@ const TABS = [
   { id: "materials", label: "Materialien" },
   { id: "steps", label: "Arbeitsgänge" },
   { id: "shipping", label: "Versand & Verpackung" },
-  { id: "presets", label: "Schallkabinen-Material" },
+  { id: "presets", label: "Vorlagen-Material" },
   { id: "customers", label: "Kunden" },
   { id: "suppliers", label: "Lieferanten" },
 ];
@@ -203,8 +203,12 @@ export default function StammdatenPage() {
         <MasterTable
           endpoint="material_presets"
           title="Material-Vorlage"
-          defaultRow={{ pos: 0, name: "", comment: "", supplier: "", unit_price: 0 }}
+          defaultRow={{ calc_type: "schallkabine", pos: 0, name: "", comment: "", supplier: "", unit_price: 0 }}
           fields={[
+            { key: "calc_type", label: "Kalkulationstyp", type: "select", options: [
+              { value: "schallkabine", label: "Schallkabine" },
+              { value: "ventilator", label: "Ventilator" },
+            ] },
             { key: "pos", label: "Pos.", type: "number" },
             { key: "name", label: "Bezeichnung", type: "text" },
             { key: "comment", label: "Kommentar", type: "text" },

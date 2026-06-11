@@ -2,21 +2,26 @@
 // Wird identisch im Worker (Speichern) und im Frontend (Live-Vorschau) verwendet.
 
 import type { CalcData, CalcResult, CalcType } from "./types";
+import { ZUSCHLAG_TYPES } from "./types";
 
 const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
+
+// Standard-Zuschläge je Typ aus den Excel-Originalen
+const MATERIAL_SURCHARGE: Partial<Record<CalcType, number>> = { schallkabine: 0.3, ventilator: 0.2 };
+const PROFIT_RATE: Partial<Record<CalcType, number>> = { baugruppe: 0.2, ventilator: 0.25 };
 
 export function emptyCalcData(type: CalcType): CalcData {
   return {
     type,
     batchQty: 1,
     smallMaterial: 0,
-    materialSurcharge: type === "schallkabine" ? 0.3 : 0.2,
+    materialSurcharge: MATERIAL_SURCHARGE[type] ?? 0.2,
     materialSpecialSurcharge: 0,
     prodOneTime: 0,
     prodSurcharge: 0,
     extOneTime: 0,
     shipOneTime: 0,
-    profitRate: type === "baugruppe" ? 0.2 : 0.3,
+    profitRate: PROFIT_RATE[type] ?? 0.3,
     materials: [],
     works: [],
     externals: [],
@@ -28,7 +33,7 @@ export function emptyCalcData(type: CalcType): CalcData {
 }
 
 export function calculate(d: CalcData, densities: Record<string, number>): CalcResult {
-  return d.type === "schallkabine" ? calcSchallkabine(d) : calcStandard(d, densities);
+  return ZUSCHLAG_TYPES.includes(d.type) ? calcZuschlag(d) : calcStandard(d, densities);
 }
 
 // Laufrad / Drückteile / Baugruppe:
@@ -110,13 +115,13 @@ function calcStandard(d: CalcData, densities: Record<string, number>): CalcResul
   };
 }
 
-// Schallkabine (Zuschlagskalkulation):
+// Schallkabine / Ventilator (Zuschlagskalkulation):
 //   Position = Stückzahl × Menge (Kg/m², leer → 1) × Einzelpreis, je Position + Verschnitt/Zuschlag
 //   Materialkosten = Summe + Sonstiger Materialsonderzuschlag
 //   Arbeitsgang = Stückzahl × Arbeitszeit (h) × Stundensatz
 //   Fertigungskosten = Summe + Sonstiger Fertigungszuschlag
 //   Verkaufspreis = Herstellkosten × (1 + Gewinnzuschlag)
-function calcSchallkabine(d: CalcData): CalcResult {
+function calcZuschlag(d: CalcData): CalcResult {
   const areaTotal = sum(d.areas.map((a) => a.value || 0));
 
   const skMatBase = d.skMaterials.map((m) => (m.qty || 0) * (m.amount || 1) * (m.unitPrice || 0));
