@@ -1,15 +1,37 @@
 import { useEffect, useState, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes } from "react";
 
-export function Card({ title, children, right }: { title?: string; children: ReactNode; right?: ReactNode }) {
+export function Card({
+  title,
+  children,
+  right,
+  summary,
+  collapsible,
+}: {
+  title?: string;
+  children: ReactNode;
+  right?: ReactNode;
+  summary?: ReactNode;
+  collapsible?: boolean;
+}) {
+  const [open, setOpen] = useState(true);
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
       {(title || right) && (
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-800">{title}</h2>
-          {right}
+        <div
+          className={`flex items-center justify-between gap-3 px-5 py-3 ${open ? "border-b border-slate-100" : ""} ${collapsible ? "cursor-pointer select-none" : ""}`}
+          onClick={collapsible ? () => setOpen(!open) : undefined}
+        >
+          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+            {collapsible && <span className="text-slate-400 text-xs w-3">{open ? "▾" : "▸"}</span>}
+            {title}
+          </h2>
+          <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+            {right}
+            {summary !== undefined && <span className="text-sm font-bold text-slate-700 whitespace-nowrap">{summary}</span>}
+          </div>
         </div>
       )}
-      <div className="p-5">{children}</div>
+      {open && <div className="p-5">{children}</div>}
     </div>
   );
 }
