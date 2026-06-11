@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { calculate } from "../../../shared/calc";
@@ -55,6 +55,19 @@ export default function CalcEditorPage() {
     });
   }, [id]);
 
+  // Strg+S speichert
+  const saveRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        saveRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const densities = useMemo(() => {
     const map: Record<string, number> = {};
     for (const m of materials) map[m.name] = m.density;
@@ -102,6 +115,24 @@ export default function CalcEditorPage() {
     }
   };
 
+  saveRef.current = save;
+
+  // Excel-ähnliche Eingabe: Enter springt zum nächsten Feld, Shift+Enter zurück
+  const handleEnterNav = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "Enter") return;
+    const t = e.target as HTMLElement;
+    if (t.tagName !== "INPUT" && t.tagName !== "SELECT") return;
+    e.preventDefault();
+    const els = Array.from(
+      e.currentTarget.querySelectorAll<HTMLElement>('input:not([type="checkbox"]), select')
+    );
+    const next = els[els.indexOf(t) + (e.shiftKey ? -1 : 1)];
+    if (next) {
+      next.focus();
+      if (next instanceof HTMLInputElement) next.select();
+    }
+  };
+
   const copyVersion = async () => {
     await save();
     const res = await api.post<{ id: number }>(`/calculations/${calc.id}/copy`);
@@ -112,7 +143,7 @@ export default function CalcEditorPage() {
   const isSk = data.type === "schallkabine" || data.type === "ventilator";
 
   return (
-    <div className="max-w-7xl space-y-5">
+    <div className="max-w-7xl space-y-5" onKeyDown={handleEnterNav}>
       {/* Kopfzeile */}
       <div className="flex flex-wrap items-center gap-3 justify-between">
         <div>
@@ -122,6 +153,7 @@ export default function CalcEditorPage() {
           <h1 className="text-2xl font-bold text-slate-800">
             {calc.title || "Neue Kalkulation"} <span className="text-slate-400 font-normal">V{calc.version}</span>
           </h1>
+          <div className="text-xs text-slate-400 mt-0.5">⏎ Enter = nächstes Feld · Shift+⏎ = zurück · Strg+S = Speichern</div>
         </div>
         <div className="flex items-center gap-2">
           {savedAt && <span className="text-xs text-green-600">Gespeichert {savedAt.toLocaleTimeString("de-DE")}</span>}
