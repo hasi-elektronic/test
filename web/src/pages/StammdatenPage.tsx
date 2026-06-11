@@ -125,6 +125,7 @@ const TABS = [
   { id: "presets", label: "Vorlagen-Material" },
   { id: "customers", label: "Kunden" },
   { id: "suppliers", label: "Lieferanten" },
+  { id: "sachbearbeiter", label: "Sachbearbeiter" },
 ];
 
 export default function StammdatenPage() {
@@ -230,6 +231,18 @@ export default function StammdatenPage() {
             { key: "phone", label: "Telefon", type: "text" },
             { key: "special_terms", label: "Sondervereinbarungen", type: "textarea" },
             { key: "notes", label: "Notizen", type: "textarea" },
+          ]}
+        />
+      )}
+
+      {tab === "sachbearbeiter" && (
+        <MasterTable
+          endpoint="sachbearbeiter"
+          title="Sachbearbeiter"
+          defaultRow={{ name: "", kuerzel: "" }}
+          fields={[
+            { key: "name", label: "Name", type: "text" },
+            { key: "kuerzel", label: "Kürzel", type: "text" },
           ]}
         />
       )}

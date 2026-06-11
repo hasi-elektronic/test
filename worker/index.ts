@@ -262,6 +262,8 @@ crud(
   "name"
 );
 
+crud("sachbearbeiter", [{ name: "name" }, { name: "kuerzel" }], "name");
+
 // ---------- Kalkulationen ----------
 
 async function loadDensities(db: D1Database): Promise<Record<string, number>> {
@@ -292,7 +294,7 @@ app.get("/calculations", async (c) => {
   }
   const sql = `
     SELECT c.id, c.calc_type, c.title, c.version, c.parent_id, c.status, c.customer_name,
-           c.inquiry_no, c.drawing_no, c.calc_date, c.manufacturing_cost, c.sales_total, c.sales_unit,
+           c.inquiry_no, c.drawing_no, c.calc_date, c.sachbearbeiter, c.manufacturing_cost, c.sales_total, c.sales_unit,
            c.updated_at, u.name AS created_by_name
     FROM calculations c LEFT JOIN users u ON u.id = c.created_by
     ${where.length ? "WHERE " + where.join(" AND ") : ""}
@@ -322,6 +324,7 @@ type CalcPayload = {
   inquiry_no: string;
   drawing_no: string;
   calc_date: string;
+  sachbearbeiter: string;
   offer_text: string;
   data: CalcData;
 };
@@ -337,9 +340,9 @@ app.post("/calculations", async (c) => {
   const r = await computeTotals(c.env.DB, p.data);
   const res = await c.env.DB.prepare(
     `INSERT INTO calculations
-     (calc_type, title, status, customer_id, customer_name, inquiry_no, drawing_no, calc_date, data, offer_text,
+     (calc_type, title, status, customer_id, customer_name, inquiry_no, drawing_no, calc_date, sachbearbeiter, data, offer_text,
       material_sum, prod_sum, ext_sum, ship_sum, manufacturing_cost, profit, sales_total, sales_unit, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       p.calc_type,
@@ -350,6 +353,7 @@ app.post("/calculations", async (c) => {
       p.inquiry_no || "",
       p.drawing_no || "",
       p.calc_date || new Date().toISOString().slice(0, 10),
+      p.sachbearbeiter || "",
       JSON.stringify(p.data),
       p.offer_text || "",
       r.materialSum,
@@ -373,7 +377,7 @@ app.put("/calculations/:id", async (c) => {
   await c.env.DB.prepare(
     `UPDATE calculations SET
      title = ?, status = ?, customer_id = ?, customer_name = ?, inquiry_no = ?, drawing_no = ?, calc_date = ?,
-     data = ?, offer_text = ?, material_sum = ?, prod_sum = ?, ext_sum = ?, ship_sum = ?,
+     sachbearbeiter = ?, data = ?, offer_text = ?, material_sum = ?, prod_sum = ?, ext_sum = ?, ship_sum = ?,
      manufacturing_cost = ?, profit = ?, sales_total = ?, sales_unit = ?, updated_at = datetime('now')
      WHERE id = ?`
   )
@@ -385,6 +389,7 @@ app.put("/calculations/:id", async (c) => {
       p.inquiry_no || "",
       p.drawing_no || "",
       p.calc_date || new Date().toISOString().slice(0, 10),
+      p.sachbearbeiter || "",
       JSON.stringify(p.data),
       p.offer_text || "",
       r.materialSum,
@@ -418,9 +423,9 @@ app.post("/calculations/:id/copy", async (c) => {
   const res = await c.env.DB.prepare(
     `INSERT INTO calculations
      (calc_type, title, version, parent_id, status, customer_id, customer_name, inquiry_no, drawing_no, calc_date,
-      data, offer_text, material_sum, prod_sum, ext_sum, ship_sum, manufacturing_cost, profit, sales_total, sales_unit, created_by)
+      sachbearbeiter, data, offer_text, material_sum, prod_sum, ext_sum, ship_sum, manufacturing_cost, profit, sales_total, sales_unit, created_by)
      SELECT calc_type, title, ?, ?, 'entwurf', customer_id, customer_name, inquiry_no, drawing_no, date('now'),
-      data, offer_text, material_sum, prod_sum, ext_sum, ship_sum, manufacturing_cost, profit, sales_total, sales_unit, ?
+      sachbearbeiter, data, offer_text, material_sum, prod_sum, ext_sum, ship_sum, manufacturing_cost, profit, sales_total, sales_unit, ?
      FROM calculations WHERE id = ?`
   )
     .bind(nextVersion, rootId, c.get("user").id, id)
