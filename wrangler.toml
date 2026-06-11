@@ -1,0 +1,17 @@
+name = "sickinger-kalkulation"
+main = "worker/index.ts"
+compatibility_date = "2025-05-05"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sickinger-kalkulation"
+database_id = "7e630aa1-5e8d-4243-9104-ff9d767c2550"
+
+[observability]
+enabled = true
