@@ -23,12 +23,11 @@ Läuft komplett auf **Cloudflare Workers** mit **D1-Datenbank** (SQLite), Deploy
 
 ## Erster Login
 
-| | |
-|---|---|
-| **E-Mail** | `admin@sickinger.de` |
-| **Passwort** | `Sickinger2026!` |
+Der Admin-Benutzer ist `admin@sickinger.de`. Das Seed-Passwort aus `migrations/0001_init.sql`
+gilt **nur für frische lokale Installationen** – in der produktiven Datenbank wurde das Passwort
+bereits auf ein eigenes geändert (wird separat mitgeteilt).
 
-> ⚠️ **Nach dem ersten Login sofort das Passwort ändern** (Seitenleiste unten → „Passwort").
+> ⚠️ **Nach dem ersten Login das Passwort ändern** (Seitenleiste unten → „Passwort").
 
 ## Deployment (GitHub Actions → Cloudflare)
 
