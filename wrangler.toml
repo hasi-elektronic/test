@@ -13,5 +13,10 @@ binding = "DB"
 database_name = "sickinger-kalkulation"
 database_id = "7e630aa1-5e8d-4243-9104-ff9d767c2550"
 
+# Produktbilder für die Typ-Auswahl (laufrad.jpg, ventilator.jpg, …)
+[[r2_buckets]]
+binding = "BILDER"
+bucket_name = "sickinger"
+
 [observability]
 enabled = true
