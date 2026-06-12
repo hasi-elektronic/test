@@ -12,8 +12,8 @@ export const CALC_TYPE_LABELS: Record<CalcType, string> = {
   ventilator: "Ventilator",
 };
 
-// Typen mit Zuschlagskalkulation (m²/Kg-Material + stundenbasierte Fertigung)
-export const ZUSCHLAG_TYPES: CalcType[] = ["schallkabine", "ventilator"];
+// Typen mit Zuschlagskalkulation (m²/Kg-Material + stundenbasierte Fertigung, nach Baugruppen)
+export const ZUSCHLAG_TYPES: CalcType[] = ["schallkabine", "ventilator", "baugruppe"];
 
 export const STATUS_LABELS: Record<CalcStatus, string> = {
   entwurf: "Entwurf",

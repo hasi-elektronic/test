@@ -159,7 +159,7 @@ export default function CalcEditorPage() {
       setShipMaster(sh);
       setBearbeiter(sb);
       setSuppliersList(sup);
-      if (c.calc_type === "schallkabine" || c.calc_type === "ventilator") {
+      if (c.calc_type === "schallkabine" || c.calc_type === "ventilator" || c.calc_type === "baugruppe") {
         api.get<{ presets: MaterialPreset[] }>(`/templates?type=${c.calc_type}`).then((t) => setPresets(t.presets));
       }
       // Bei bestehenden Kalkulationen lange Vorlagen-Listen automatisch filtern
@@ -305,7 +305,7 @@ export default function CalcEditorPage() {
     }
   };
 
-  const isSk = data.type === "schallkabine" || data.type === "ventilator";
+  const isSk = data.type === "schallkabine" || data.type === "ventilator" || data.type === "baugruppe";
 
   // Preis-Warnungen für den Sachbearbeiter: fehlende, veraltete oder stark abweichende Materialpreise
   const STALE_DAYS = 90;
@@ -371,28 +371,32 @@ export default function CalcEditorPage() {
   const skWorkGroupTotal = (g: string) =>
     data.skWorks.reduce((a, w, i) => a + ((w.group || "") === g ? result.skWorkPrices[i] : 0), 0);
 
-  // Kosten je Baugruppe (Material + Fertigung) für das Seitenpanel
-  const groupCosts: { name: string; value: number }[] = [];
+  // Preise je Baugruppe für das Seitenpanel: HK (inkl. anteiliger Sonderzuschläge)
+  // und VK (HK × Gewinnzuschlag) – Summe der Gruppen-VKs = Verkaufspreis gesamt
+  const groupCosts: { name: string; hk: number; vk: number }[] = [];
   if (isSk) {
-    const map: Record<string, number> = {};
+    const mat: Record<string, number> = {};
+    const work: Record<string, number> = {};
     const order: string[] = [];
+    const touch = (g: string) => {
+      if (!order.includes(g)) order.push(g);
+    };
     data.skMaterials.forEach((m, i) => {
       const g = m.group || "Sonstiges";
-      if (!(g in map)) {
-        map[g] = 0;
-        order.push(g);
-      }
-      map[g] += result.skMatPrices[i];
+      touch(g);
+      mat[g] = (mat[g] || 0) + result.skMatPrices[i];
     });
     data.skWorks.forEach((w, i) => {
       const g = w.group || "Sonstiges";
-      if (!(g in map)) {
-        map[g] = 0;
-        order.push(g);
-      }
-      map[g] += result.skWorkPrices[i];
+      touch(g);
+      work[g] = (work[g] || 0) + result.skWorkPrices[i];
     });
-    for (const g of order) if (map[g] > 0) groupCosts.push({ name: g, value: map[g] });
+    for (const g of order) {
+      const hk =
+        (mat[g] || 0) * (1 + (data.materialSpecialSurcharge || 0)) +
+        (work[g] || 0) * (1 + (data.prodSurcharge || 0));
+      if (hk > 0) groupCosts.push({ name: g, hk, vk: hk * (1 + (data.profitRate || 0)) });
+    }
   }
 
   const openPicker = () => {
@@ -1174,15 +1178,26 @@ export default function CalcEditorPage() {
           </div>
           {groupCosts.length > 0 && (
             <div className="bg-white rounded-xl border border-slate-200 p-4">
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Kosten je Baugruppe</h3>
-              <div className="space-y-1 text-sm">
-                {groupCosts.map((g) => (
-                  <div key={g.name} className="flex justify-between">
-                    <span className="text-slate-600">{g.name}</span>
-                    <span className="font-medium text-slate-800">{fmtEur(g.value)}</span>
-                  </div>
-                ))}
-              </div>
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Preise je Baugruppe</h3>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-slate-400">
+                    <th className="text-left font-medium pb-1">Baugruppe</th>
+                    <th className="text-right font-medium pb-1">HK</th>
+                    <th className="text-right font-medium pb-1">VK</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groupCosts.map((g) => (
+                    <tr key={g.name}>
+                      <td className="text-slate-600 py-0.5">{g.name}</td>
+                      <td className="text-right text-slate-500 whitespace-nowrap">{fmtEur(g.hk)}</td>
+                      <td className="text-right font-medium text-slate-800 whitespace-nowrap">{fmtEur(g.vk)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-xs text-slate-400 mt-2">VK = HK inkl. Gewinnzuschlag – einzeln anbietbar, Summe = Verkaufspreis gesamt.</p>
             </div>
           )}
           <div className="bg-white rounded-xl border border-slate-200 p-4 text-xs text-slate-500 space-y-1">

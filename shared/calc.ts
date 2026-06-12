@@ -7,7 +7,7 @@ import { ZUSCHLAG_TYPES } from "./types";
 const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
 
 // Standard-Zuschläge je Typ aus den Excel-Originalen
-const MATERIAL_SURCHARGE: Partial<Record<CalcType, number>> = { schallkabine: 0.3, ventilator: 0.2 };
+const MATERIAL_SURCHARGE: Partial<Record<CalcType, number>> = { schallkabine: 0.3, ventilator: 0.2, baugruppe: 0.2 };
 const PROFIT_RATE: Partial<Record<CalcType, number>> = { baugruppe: 0.2, ventilator: 0.25 };
 
 export function emptyCalcData(type: CalcType): CalcData {
