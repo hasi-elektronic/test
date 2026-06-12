@@ -74,17 +74,29 @@ app.get("/typen", async (c) => {
   return c.json(list.objects.map((o) => o.key));
 });
 
+// Alias-Zuordnung für die hochgeladenen Screenshot-Dateien;
+// Dateien mit dem richtigen Typnamen (z. B. laufrad.jpg) haben Vorrang.
+const BILD_ALIAS: Record<string, string[]> = {
+  ventilator: ["ventilator", "Screenshot_1"],
+  baugruppe: ["baugruppe", "Screenshot_2"],
+  drueckteile: ["drueckteile", "Screenshot_3"],
+  laufrad: ["laufrad", "Screenshot_19"],
+  schallkabine: ["schallkabine"],
+};
+
 app.get("/typen/:type", async (c) => {
   const t = c.req.param("type").replace(/[^\w-]/g, "");
-  for (const ext of ["jpg", "jpeg", "png", "webp"]) {
-    const obj = await c.env.BILDER.get(`${t}.${ext}`);
-    if (obj) {
-      return new Response(obj.body as ReadableStream, {
-        headers: {
-          "Content-Type": obj.httpMetadata?.contentType ?? (ext === "jpg" ? "image/jpeg" : `image/${ext}`),
-          "Cache-Control": "public, max-age=3600",
-        },
-      });
+  for (const name of BILD_ALIAS[t] ?? [t]) {
+    for (const ext of ["jpg", "jpeg", "png", "webp"]) {
+      const obj = await c.env.BILDER.get(`${name}.${ext}`);
+      if (obj) {
+        return new Response(obj.body as ReadableStream, {
+          headers: {
+            "Content-Type": obj.httpMetadata?.contentType ?? (ext === "jpg" ? "image/jpeg" : `image/${ext}`),
+            "Cache-Control": "public, max-age=600",
+          },
+        });
+      }
     }
   }
   return c.json({ error: "Nicht gefunden" }, 404);
