@@ -95,6 +95,50 @@ function ShapeToggle({ value, onChange }: { value: "rund" | "eckig"; onChange: (
   );
 }
 
+// Lieferant/Material-Auswahl: zeigt beim Öffnen ALLE Werkstoffe, Lieferanten und Vorlagen-Quellen
+function LieferantSelect({
+  value,
+  onChange,
+  materials,
+  suppliers,
+  extra,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  materials: Material[];
+  suppliers: Supplier[];
+  extra: string[];
+}) {
+  const known =
+    value === "" ||
+    materials.some((m) => m.name === value) ||
+    suppliers.some((s) => s.name === value) ||
+    extra.includes(value);
+  return (
+    <Select value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">–</option>
+      {!known && <option value={value}>{value}</option>}
+      <optgroup label="Material">
+        {materials.map((m) => (
+          <option key={`m${m.id}`} value={m.name}>{m.name}</option>
+        ))}
+      </optgroup>
+      <optgroup label="Lieferanten">
+        {suppliers.map((s) => (
+          <option key={`s${s.id}`} value={s.name}>{s.name}</option>
+        ))}
+      </optgroup>
+      {extra.length > 0 && (
+        <optgroup label="Aus Vorlagen">
+          {extra.map((n) => (
+            <option key={`e${n}`} value={n}>{n}</option>
+          ))}
+        </optgroup>
+      )}
+    </Select>
+  );
+}
+
 function RowButtons({ onCopy, onRemove }: { onCopy?: () => void; onRemove: () => void }) {
   return (
     <div className="flex items-center whitespace-nowrap">
@@ -126,6 +170,10 @@ export default function CalcEditorPage() {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
+
+  // Baugruppen starten eingeklappt – Klick auf den Gruppenkopf öffnet sie
+  const [openMatGroups, setOpenMatGroups] = useState<Record<string, boolean>>({});
+  const [openWorkGroups, setOpenWorkGroups] = useState<Record<string, boolean>>({});
 
   // Unterkalkulation einfügen (Zuschlagskalkulation)
   const [showPick, setShowPick] = useState(false);
@@ -432,6 +480,13 @@ export default function CalcEditorPage() {
   // Auswahllisten für Maus-Bedienung (Klick auf den Pfeil im Feld bzw. Doppelklick zeigt alle Einträge)
   const vorlagenNamen = [...new Set(presets.map((p) => p.name))];
   const lieferantenNamen = [...new Set([...materials.map((m) => m.name), ...suppliersList.map((s) => s.name)])];
+  const presetLieferanten = [
+    ...new Set(
+      presets
+        .map((p) => p.supplier)
+        .filter((s) => s && !materials.some((m) => m.name === s) && !suppliersList.some((x) => x.name === s))
+    ),
+  ];
 
   return (
     <div className="max-w-7xl space-y-5" onKeyDown={handleEnterNav}>
@@ -943,12 +998,19 @@ export default function CalcEditorPage() {
                       {skMatGroups.map((grp) => (
                         <Fragment key={grp.name || "_ohne"}>
                           {showSkMatGroups && (
-                            <tr className="bg-slate-100/80">
+                            <tr
+                              className="bg-slate-100/80 cursor-pointer select-none hover:bg-slate-200/60"
+                              onClick={() => setOpenMatGroups((p) => ({ ...p, [grp.name]: !p[grp.name] }))}
+                            >
                               <td colSpan={7} className="px-2 py-1.5 text-xs font-semibold text-slate-600 uppercase">
+                                <span className="inline-block w-3 text-slate-400">{openMatGroups[grp.name] ? "▾" : "▸"}</span>
                                 {grp.name || "Sonstiges"}
+                                <span className="ml-2 text-slate-400 font-normal normal-case">({grp.rows.length})</span>
                                 <button
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setHideSkMat(false);
+                                    setOpenMatGroups((p) => ({ ...p, [grp.name]: true }));
                                     addRow("skMaterials", { comment: "", name: "", supplier: "", qty: 0, amount: 0, unitPrice: 0, group: grp.name });
                                   }}
                                   className="ml-2 text-blue-500 hover:text-blue-700 normal-case font-normal"
@@ -962,7 +1024,8 @@ export default function CalcEditorPage() {
                               <td></td>
                             </tr>
                           )}
-                          {grp.rows.map(({ m, i }) => (
+                          {(!showSkMatGroups || openMatGroups[grp.name]) &&
+                          grp.rows.map(({ m, i }) => (
                             <tr key={i} className={isUsed.skMaterial(m) ? usedRow : undefined}>
                               <td className={`${td} w-32`}><TextInput value={m.comment} onChange={(e) => updateRow("skMaterials", i, { comment: e.target.value })} /></td>
                               <td className={td}>
@@ -985,11 +1048,13 @@ export default function CalcEditorPage() {
                                   }}
                                 />
                               </td>
-                              <td className={`${td} w-32`}>
-                                <TextInput
+                              <td className={`${td} w-36`}>
+                                <LieferantSelect
                                   value={m.supplier}
-                                  list="dl-lieferanten"
-                                  onChange={(e) => updateRow("skMaterials", i, { supplier: e.target.value })}
+                                  onChange={(v) => updateRow("skMaterials", i, { supplier: v })}
+                                  materials={materials}
+                                  suppliers={suppliersList}
+                                  extra={presetLieferanten}
                                 />
                               </td>
                               <td className={`${td} w-20`}><NumInput value={m.qty} onValue={(v) => updateRow("skMaterials", i, { qty: v })} /></td>
@@ -1059,12 +1124,19 @@ export default function CalcEditorPage() {
                       {skWorkGroups.map((grp) => (
                         <Fragment key={grp.name || "_ohne"}>
                           {showSkWorkGroups && (
-                            <tr className="bg-slate-100/80">
+                            <tr
+                              className="bg-slate-100/80 cursor-pointer select-none hover:bg-slate-200/60"
+                              onClick={() => setOpenWorkGroups((p) => ({ ...p, [grp.name]: !p[grp.name] }))}
+                            >
                               <td colSpan={4} className="px-2 py-1.5 text-xs font-semibold text-slate-600 uppercase">
+                                <span className="inline-block w-3 text-slate-400">{openWorkGroups[grp.name] ? "▾" : "▸"}</span>
                                 {grp.name || "Sonstiges"}
+                                <span className="ml-2 text-slate-400 font-normal normal-case">({grp.rows.length})</span>
                                 <button
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setHideSkWorks(false);
+                                    setOpenWorkGroups((p) => ({ ...p, [grp.name]: true }));
                                     addRow("skWorks", { name: "", qty: 0, hours: 0, rate: 58, group: grp.name });
                                   }}
                                   className="ml-2 text-blue-500 hover:text-blue-700 normal-case font-normal"
@@ -1078,7 +1150,8 @@ export default function CalcEditorPage() {
                               <td></td>
                             </tr>
                           )}
-                          {grp.rows.map(({ w, i }) => (
+                          {(!showSkWorkGroups || openWorkGroups[grp.name]) &&
+                          grp.rows.map(({ w, i }) => (
                             <tr key={i} className={isUsed.skWork(w) ? usedRow : undefined}>
                               <td className={td}><TextInput value={w.name} onChange={(e) => updateRow("skWorks", i, { name: e.target.value })} /></td>
                               <td className={`${td} w-24`}><NumInput value={w.qty} onValue={(v) => updateRow("skWorks", i, { qty: v })} /></td>
