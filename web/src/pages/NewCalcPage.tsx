@@ -32,8 +32,17 @@ export default function NewCalcPage() {
       data.areas = type === "schallkabine" ? Array.from({ length: 4 }, () => ({ label: "", value: 0 })) : [];
     } else {
       // Typische Positionen je Typ vorbelegen (aus den Excel-Originalen)
-      const matLabels: Record<string, string[]> = {
-        laufrad: ["Deckscheibe", "Rückwand", "Schaufeln", "Konus", "Nabe", ""],
+      // Deckscheibe/Rückwand/Konus/Nabe sind rund (Durchmesser), Drückteile fast immer rund
+      const matLabels: Record<string, { label: string; shape: "rund" | "eckig" }[]> = {
+        laufrad: [
+          { label: "Deckscheibe", shape: "rund" },
+          { label: "Rückwand", shape: "rund" },
+          { label: "Schaufeln", shape: "eckig" },
+          { label: "Konus", shape: "rund" },
+          { label: "Nabe", shape: "rund" },
+          { label: "", shape: "eckig" },
+        ],
+        drueckteile: Array.from({ length: 6 }, () => ({ label: "", shape: "rund" as const })),
       };
       const extPresets: Record<string, { name: string; supplier: string }[]> = {
         laufrad: [
@@ -47,9 +56,12 @@ export default function NewCalcPage() {
           { name: "", supplier: "" },
         ],
       };
-      data.materials = (matLabels[type] ?? Array.from({ length: 6 }, () => "")).map((label) => ({
-        label,
+      data.materials = (
+        matLabels[type] ?? Array.from({ length: 6 }, () => ({ label: "", shape: "eckig" as const }))
+      ).map((row) => ({
+        label: row.label,
         material: "",
+        shape: row.shape,
         width: 0,
         height: 0,
         thickness: 0,

@@ -28,8 +28,9 @@ export const STATUS_LABELS: Record<CalcStatus, string> = {
 export interface MaterialItem {
   label: string; // "Was"
   material: string; // Name aus Materialliste (für Dichte-Lookup)
-  width: number; // Breite mm
-  height: number; // Höhe mm
+  shape?: "rund" | "eckig"; // rund: Zuschnitt Ø×Ø (width = Durchmesser), eckig: Breite×Höhe
+  width: number; // Breite bzw. Durchmesser mm
+  height: number; // Höhe mm (bei rund ignoriert)
   thickness: number; // Dicke mm
   qtyPerPiece: number; // Stück pro Stück
   pricePerKg: number;

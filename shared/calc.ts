@@ -51,7 +51,9 @@ function calcStandard(d: CalcData, densities: Record<string, number>): CalcResul
   for (const m of d.materials) {
     const density = densities[m.material] ?? 0;
     const totalQty = (m.qtyPerPiece || 0) * qty;
-    const kg = (density * ((m.width || 0) * (m.height || 0) * (m.thickness || 0) * totalQty)) / 1_000_000;
+    // rund: quadratischer Zuschnitt Ø×Ø (Verschnitt steckt im Blechverbrauch), eckig: Breite×Höhe
+    const area = m.shape === "rund" ? (m.width || 0) * (m.width || 0) : (m.width || 0) * (m.height || 0);
+    const kg = (density * (area * (m.thickness || 0) * totalQty)) / 1_000_000;
     materialWeights.push(kg);
     materialPrices.push(kg * (m.pricePerKg || 0));
   }
