@@ -7,6 +7,7 @@ import { hashPassword, verifyPassword, randomHex } from "./auth";
 type Env = {
   DB: D1Database;
   ASSETS: Fetcher;
+  BILDER: R2Bucket;
 };
 
 type SessionUser = {
@@ -64,6 +65,29 @@ app.post("/auth/logout", async (c) => {
   if (token) await c.env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
   deleteCookie(c, COOKIE, { path: "/" });
   return c.json({ ok: true });
+});
+
+// Produktbilder aus R2 (Bucket "sickinger") – öffentlich, vor der Auth-Middleware.
+// Erwartete Dateinamen: laufrad / drueckteile / baugruppe / schallkabine / ventilator + .jpg/.jpeg/.png/.webp
+app.get("/typen", async (c) => {
+  const list = await c.env.BILDER.list();
+  return c.json(list.objects.map((o) => o.key));
+});
+
+app.get("/typen/:type", async (c) => {
+  const t = c.req.param("type").replace(/[^\w-]/g, "");
+  for (const ext of ["jpg", "jpeg", "png", "webp"]) {
+    const obj = await c.env.BILDER.get(`${t}.${ext}`);
+    if (obj) {
+      return new Response(obj.body as ReadableStream, {
+        headers: {
+          "Content-Type": obj.httpMetadata?.contentType ?? (ext === "jpg" ? "image/jpeg" : `image/${ext}`),
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    }
+  }
+  return c.json({ error: "Nicht gefunden" }, 404);
 });
 
 // Auth-Middleware für alles Weitere

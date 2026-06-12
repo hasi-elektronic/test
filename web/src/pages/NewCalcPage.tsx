@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { emptyCalcData } from "../../../shared/calc";
@@ -59,6 +60,20 @@ const ICONS: Record<CalcType, JSX.Element> = {
     </svg>
   ),
 };
+
+// Zeigt das CAD-Bild aus R2 (Bucket "sickinger", /api/typen/<typ>), Fallback: SVG-Illustration
+function TypeImage({ type }: { type: CalcType }) {
+  const [fallback, setFallback] = useState(false);
+  if (fallback) return ICONS[type];
+  return (
+    <img
+      src={`/api/typen/${type}`}
+      alt=""
+      onError={() => setFallback(true)}
+      className="w-24 h-24 object-contain"
+    />
+  );
+}
 
 const TYPES: { type: CalcType; title: string; desc: string }[] = [
   { type: "laufrad", title: "Laufrad", desc: "Fan-Laufräder: Material nach Kg, Arbeitsgänge mit Rüst- & Fertigungszeit, externe Bearbeitung, Versand." },
@@ -167,7 +182,7 @@ export default function NewCalcPage() {
             onClick={() => create(t.type)}
             className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 text-left hover:border-blue-400 hover:shadow-md transition group"
           >
-            <div className="mb-3">{ICONS[t.type]}</div>
+            <div className="mb-3"><TypeImage type={t.type} /></div>
             <div className="font-semibold text-slate-800 group-hover:text-blue-600 text-lg">{t.title}</div>
             <div className="text-sm text-slate-500 mt-1">{t.desc}</div>
           </button>
