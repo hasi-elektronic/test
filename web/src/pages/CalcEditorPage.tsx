@@ -261,6 +261,18 @@ export default function CalcEditorPage() {
     window.location.reload();
   };
 
+  const deleteCalc = async () => {
+    if (!confirm(`Kalkulation "${calc.title || "ohne Titel"}" (V${calc.version}) wirklich löschen?`)) return;
+    setError("");
+    try {
+      await api.delete(`/calculations/${calc.id}`);
+      setDirty(false);
+      navigate("/kalkulationen");
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
   const isSk = data.type === "schallkabine" || data.type === "ventilator";
 
   // Gefilterte Sichten mit Original-Index
@@ -295,6 +307,9 @@ export default function CalcEditorPage() {
         <div className="flex items-center gap-2">
           {saveState}
           {error && <span className="text-xs text-red-600">{error}</span>}
+          <Button variant="secondary" onClick={deleteCalc} className="!text-red-600 hover:!bg-red-50">
+            🗑 Löschen
+          </Button>
           <Button variant="secondary" onClick={copyVersion}>⧉ Neue Version</Button>
           <Link
             to={`/kalkulationen/${calc.id}/angebot`}
