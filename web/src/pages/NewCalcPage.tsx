@@ -31,8 +31,24 @@ export default function NewCalcPage() {
       }));
       data.areas = type === "schallkabine" ? Array.from({ length: 4 }, () => ({ label: "", value: 0 })) : [];
     } else {
-      data.materials = Array.from({ length: 6 }, () => ({
-        label: "",
+      // Typische Positionen je Typ vorbelegen (aus den Excel-Originalen)
+      const matLabels: Record<string, string[]> = {
+        laufrad: ["Deckscheibe", "Rückwand", "Schaufeln", "Konus", "Nabe", ""],
+      };
+      const extPresets: Record<string, { name: string; supplier: string }[]> = {
+        laufrad: [
+          { name: "Beizen", supplier: "Inox" },
+          { name: "Glühen", supplier: "Raiser" },
+          { name: "WM-Nabe", supplier: "" },
+        ],
+        baugruppe: [
+          { name: "Nabe", supplier: "" },
+          { name: "Beizen", supplier: "Inox" },
+          { name: "", supplier: "" },
+        ],
+      };
+      data.materials = (matLabels[type] ?? Array.from({ length: 6 }, () => "")).map((label) => ({
+        label,
         material: "",
         width: 0,
         height: 0,
@@ -47,7 +63,9 @@ export default function NewCalcPage() {
         setupMin: s.setup_min,
         prodMin: 0,
       }));
-      data.externals = Array.from({ length: 3 }, () => ({ name: "", supplier: "", offerNo: "", price: 0, perPiece: false }));
+      data.externals = (extPresets[type] ?? Array.from({ length: 3 }, () => ({ name: "", supplier: "" }))).map(
+        (e) => ({ name: e.name, supplier: e.supplier, offerNo: "", price: 0, perPiece: false })
+      );
       data.shipping = [
         { kind: "fahrzeug" as const, name: "", unitPrice: 0, qty: 0 },
         { kind: "verpackung" as const, name: "", unitPrice: 0, qty: 0 },
