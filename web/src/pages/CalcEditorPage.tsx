@@ -95,6 +95,26 @@ function ShapeToggle({ value, onChange }: { value: "rund" | "eckig"; onChange: (
   );
 }
 
+// Arbeitszeit-Auswahl in Viertelstunden-Schritten (Zuschlagskalkulation)
+const HOUR_STEPS = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48];
+
+function hourLabel(h: number): string {
+  if (h === 0) return "–";
+  if (h < 1) return `${h * 60} min`;
+  return `${fmtNum(h)} h`;
+}
+
+function HoursSelect({ value, onValue }: { value: number; onValue: (v: number) => void }) {
+  const opts = HOUR_STEPS.includes(value) ? HOUR_STEPS : [...HOUR_STEPS, value].sort((a, b) => a - b);
+  return (
+    <Select value={value} onChange={(e) => onValue(Number(e.target.value))}>
+      {opts.map((h) => (
+        <option key={h} value={h}>{hourLabel(h)}</option>
+      ))}
+    </Select>
+  );
+}
+
 // Lieferant/Material-Auswahl: zeigt beim Öffnen ALLE Werkstoffe, Lieferanten und Vorlagen-Quellen
 function LieferantSelect({
   value,
@@ -201,6 +221,14 @@ export default function CalcEditorPage() {
       api.get<Supplier[]>("/suppliers"),
     ]).then(([c, m, cu, sh, sb, sup]) => {
       setCalc(c);
+      // Alt-Daten: Stückzahl × Stunden in die Stundenangabe falten (Spalte Stückzahl entfällt)
+      if (c.data.skWorks?.some((w) => (w.qty || 0) > 1)) {
+        c.data.skWorks = c.data.skWorks.map((w) => ({
+          ...w,
+          hours: (w.qty || 0) > 1 ? (w.qty || 1) * (w.hours || 0) : w.hours,
+          qty: (w.hours || 0) > 0 && (w.qty || 0) > 0 ? 1 : w.qty,
+        }));
+      }
       setData(c.data);
       setMaterials(m.filter((x) => x.active));
       setCustomers(cu);
@@ -1118,12 +1146,11 @@ export default function CalcEditorPage() {
                 right={<UsedFilter value={hideSkWorks} onChange={setHideSkWorks} />}
               >
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[640px]">
+                  <table className="w-full min-w-[560px]">
                     <thead>
                       <tr>
                         <th className={th}>Arbeitsgang</th>
-                        <th className={thR}>Stückzahl</th>
-                        <th className={thR}>Arbeitszeit (h)</th>
+                        <th className={thR}>Arbeitszeit</th>
                         <th className={thR}>Stundensatz</th>
                         <th className={thR}>Preis</th>
                         <th></th>
@@ -1137,7 +1164,7 @@ export default function CalcEditorPage() {
                               className="bg-slate-100/80 cursor-pointer select-none hover:bg-slate-200/60"
                               onClick={() => setOpenWorkGroups((p) => ({ ...p, [grp.name]: !p[grp.name] }))}
                             >
-                              <td colSpan={4} className="px-2 py-1.5 text-xs font-semibold text-slate-600 uppercase">
+                              <td colSpan={3} className="px-2 py-1.5 text-xs font-semibold text-slate-600 uppercase">
                                 <span className="inline-block w-3 text-slate-400">{openWorkGroups[grp.name] ? "▾" : "▸"}</span>
                                 {grp.name || "Sonstiges"}
                                 <span className="ml-2 text-slate-400 font-normal normal-case">({grp.rows.length})</span>
@@ -1163,11 +1190,10 @@ export default function CalcEditorPage() {
                           grp.rows.map(({ w, i }) => (
                             <tr key={i} className={isUsed.skWork(w) ? usedRow : undefined}>
                               <td className={td}><TextInput value={w.name} onChange={(e) => updateRow("skWorks", i, { name: e.target.value })} /></td>
-                              <td className={`${td} w-24`}><NumInput value={w.qty} onValue={(v) => updateRow("skWorks", i, { qty: v })} /></td>
-                              <td className={`${td} w-28`}>
-                                <NumInput
+                              <td className={`${td} w-32`}>
+                                <HoursSelect
                                   value={w.hours}
-                                  onValue={(v) => updateRow("skWorks", i, { hours: v, ...(v > 0 && !w.qty ? { qty: 1 } : {}) })}
+                                  onValue={(v) => updateRow("skWorks", i, { hours: v, qty: v > 0 ? 1 : 0 })}
                                 />
                               </td>
                               <td className={`${td} w-24`}><NumInput value={w.rate} onValue={(v) => updateRow("skWorks", i, { rate: v })} /></td>
