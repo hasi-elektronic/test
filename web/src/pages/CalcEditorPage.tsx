@@ -1051,7 +1051,16 @@ export default function CalcEditorPage() {
                               <td className={`${td} w-36`}>
                                 <LieferantSelect
                                   value={m.supplier}
-                                  onChange={(v) => updateRow("skMaterials", i, { supplier: v })}
+                                  onChange={(v) => {
+                                    const mat = materials.find((x) => x.name === v);
+                                    updateRow("skMaterials", i, {
+                                      supplier: v,
+                                      // Werkstoff gewählt → Kg-Preis aus Stammdaten übernehmen (eigene Eingabe bleibt)
+                                      ...(mat && mat.price_per_kg > 0 && !m.unitPrice
+                                        ? { unitPrice: mat.price_per_kg }
+                                        : {}),
+                                    });
+                                  }}
                                   materials={materials}
                                   suppliers={suppliersList}
                                   extra={presetLieferanten}
