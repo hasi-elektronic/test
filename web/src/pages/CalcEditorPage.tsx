@@ -523,12 +523,13 @@ export default function CalcEditorPage() {
                 right={<UsedFilter value={hideMat} onChange={setHideMat} />}
               >
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[840px]">
+                  <table className="w-full min-w-[920px]">
                     <thead>
                       <tr>
                         <th className={th}>Was</th>
                         <th className={th}>Material</th>
-                        <th className={thR}>Breite mm</th>
+                        <th className={th}>Form</th>
+                        <th className={thR}>Ø / Breite mm</th>
                         <th className={thR}>Höhe mm</th>
                         <th className={thR}>Dicke mm</th>
                         <th className={thR}>St./Stück</th>
@@ -562,8 +563,34 @@ export default function CalcEditorPage() {
                               ))}
                             </Select>
                           </td>
-                          <td className={`${td} w-20`}><NumInput value={m.width} onValue={(v) => updateRow("materials", i, { width: v })} /></td>
-                          <td className={`${td} w-20`}><NumInput value={m.height} onValue={(v) => updateRow("materials", i, { height: v })} /></td>
+                          <td className={`${td} w-24`}>
+                            <Select
+                              value={m.shape ?? "eckig"}
+                              onChange={(e) => updateRow("materials", i, { shape: e.target.value })}
+                            >
+                              <option value="eckig">⬛ eckig</option>
+                              <option value="rund">⭕ rund</option>
+                            </Select>
+                          </td>
+                          <td className={`${td} w-24`}>
+                            <NumInput
+                              value={m.width}
+                              onValue={(v) => updateRow("materials", i, { width: v })}
+                              placeholder={m.shape === "rund" ? "Ø" : ""}
+                            />
+                          </td>
+                          <td className={`${td} w-20`}>
+                            {m.shape === "rund" ? (
+                              <div
+                                className="px-2.5 py-1.5 text-sm text-slate-400 text-right"
+                                title="Bei runden Teilen nicht nötig – Zuschnitt wird als Ø×Ø gerechnet"
+                              >
+                                = Ø
+                              </div>
+                            ) : (
+                              <NumInput value={m.height} onValue={(v) => updateRow("materials", i, { height: v })} />
+                            )}
+                          </td>
                           <td className={`${td} w-16`}><NumInput value={m.thickness} onValue={(v) => updateRow("materials", i, { thickness: v })} /></td>
                           <td className={`${td} w-16`}><NumInput value={m.qtyPerPiece} onValue={(v) => updateRow("materials", i, { qtyPerPiece: v })} /></td>
                           <td className={tdOut}>{fmtNum(result.materialWeights[i])}</td>
@@ -581,11 +608,23 @@ export default function CalcEditorPage() {
                   variant="ghost"
                   onClick={() => {
                     setHideMat(false);
-                    addRow("materials", { label: "", material: "", width: 0, height: 0, thickness: 0, qtyPerPiece: 0, pricePerKg: 0 });
+                    addRow("materials", {
+                      label: "",
+                      material: "",
+                      shape: data.type === "drueckteile" ? "rund" : "eckig",
+                      width: 0,
+                      height: 0,
+                      thickness: 0,
+                      qtyPerPiece: 0,
+                      pricePerKg: 0,
+                    });
                   }}
                 >
                   + Zeile
                 </Button>
+                <p className="text-xs text-slate-400 mt-1">
+                  ⭕ Rund: nur Durchmesser eingeben – Gewicht wird aus quadratischem Zuschnitt Ø×Ø gerechnet (Verschnitt im Verbrauch enthalten).
+                </p>
                 {priceWarnings.length > 0 && (
                   <div className="mt-3 text-xs bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2 space-y-1">
                     {priceWarnings.map((w, i) => (
