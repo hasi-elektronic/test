@@ -19,7 +19,7 @@ export default function NewCalcPage() {
     const data: CalcData = emptyCalcData(type);
 
     if (type === "schallkabine" || type === "ventilator") {
-      data.skWorks = tpl.steps.map((s) => ({ name: s.name, qty: 0, hours: 0, rate: s.rate }));
+      data.skWorks = tpl.steps.map((s) => ({ name: s.name, qty: 0, hours: 0, rate: s.rate, group: s.grp || "" }));
       data.skMaterials = tpl.presets.map((p) => ({
         comment: p.comment,
         name: p.name,
@@ -27,6 +27,7 @@ export default function NewCalcPage() {
         qty: 0,
         amount: 0,
         unitPrice: p.unit_price,
+        group: p.grp || "",
       }));
       data.areas = type === "schallkabine" ? Array.from({ length: 4 }, () => ({ label: "", value: 0 })) : [];
     } else {

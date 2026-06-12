@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { calculate } from "../../../shared/calc";
@@ -18,7 +18,7 @@ import type {
 } from "../../../shared/types";
 import { CALC_TYPE_LABELS, STATUS_LABELS } from "../../../shared/types";
 import { fmtDate, fmtEur, fmtNum } from "../format";
-import { Button, Card, Field, NumInput, Select, Spinner, TextInput } from "../components/ui";
+import { Button, Card, Field, Modal, NumInput, Select, Spinner, TextInput } from "../components/ui";
 
 function SectionSum({ label, value }: { label: string; value: number }) {
   return (
@@ -104,6 +104,11 @@ export default function CalcEditorPage() {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
+
+  // Unterkalkulation einfügen (Zuschlagskalkulation)
+  const [showPick, setShowPick] = useState(false);
+  const [pickRows, setPickRows] = useState<any[] | null>(null);
+  const [pickQ, setPickQ] = useState("");
 
   // "nur verwendete"-Filter je Tabelle
   const [hideMat, setHideMat] = useState(false);
@@ -315,6 +320,75 @@ export default function CalcEditorPage() {
   const shipRows = data.shipping.map((s, i) => ({ s, i })).filter(({ s }) => !hideShip || isUsed.shipping(s));
   const skMatRows = data.skMaterials.map((m, i) => ({ m, i })).filter(({ m }) => !hideSkMat || isUsed.skMaterial(m));
   const skWorkRows = data.skWorks.map((w, i) => ({ w, i })).filter(({ w }) => !hideSkWorks || isUsed.skWork(w));
+
+  // Baugruppen-Gruppierung (Ventilator/Schallkabine): Zeilen nach group bündeln
+  const buildGroups = <T,>(rows: T[], getGroup: (r: T) => string) => {
+    const order: string[] = [];
+    const map: Record<string, T[]> = {};
+    for (const r of rows) {
+      const g = getGroup(r);
+      if (!map[g]) {
+        map[g] = [];
+        order.push(g);
+      }
+      map[g].push(r);
+    }
+    return order.map((name) => ({ name, rows: map[name] }));
+  };
+  const skMatGroups = buildGroups(skMatRows, ({ m }) => m.group || "");
+  const skWorkGroups = buildGroups(skWorkRows, ({ w }) => w.group || "");
+  const showSkMatGroups = skMatGroups.length > 1 || (skMatGroups[0]?.name ?? "") !== "";
+  const showSkWorkGroups = skWorkGroups.length > 1 || (skWorkGroups[0]?.name ?? "") !== "";
+  const skMatGroupTotal = (g: string) =>
+    data.skMaterials.reduce((a, m, i) => a + ((m.group || "") === g ? result.skMatPrices[i] : 0), 0);
+  const skWorkGroupTotal = (g: string) =>
+    data.skWorks.reduce((a, w, i) => a + ((w.group || "") === g ? result.skWorkPrices[i] : 0), 0);
+
+  // Kosten je Baugruppe (Material + Fertigung) für das Seitenpanel
+  const groupCosts: { name: string; value: number }[] = [];
+  if (isSk) {
+    const map: Record<string, number> = {};
+    const order: string[] = [];
+    data.skMaterials.forEach((m, i) => {
+      const g = m.group || "Sonstiges";
+      if (!(g in map)) {
+        map[g] = 0;
+        order.push(g);
+      }
+      map[g] += result.skMatPrices[i];
+    });
+    data.skWorks.forEach((w, i) => {
+      const g = w.group || "Sonstiges";
+      if (!(g in map)) {
+        map[g] = 0;
+        order.push(g);
+      }
+      map[g] += result.skWorkPrices[i];
+    });
+    for (const g of order) if (map[g] > 0) groupCosts.push({ name: g, value: map[g] });
+  }
+
+  const openPicker = () => {
+    setShowPick(true);
+    if (!pickRows) {
+      api.get<any[]>("/calculations").then((r) => setPickRows(r.filter((x) => x.id !== calc.id)));
+    }
+  };
+
+  const insertSubCalc = (row: any) => {
+    setHideSkMat(false);
+    addRow("skMaterials", {
+      comment: `aus Kalk. #${row.id} V${row.version} (HK, ohne Zuschlag)`,
+      name: row.title || CALC_TYPE_LABELS[row.calc_type as keyof typeof CALC_TYPE_LABELS] || row.calc_type,
+      supplier: "",
+      qty: 1,
+      amount: 0,
+      unitPrice: row.manufacturing_cost || 0,
+      group: "Unterkalkulationen",
+      noSurcharge: true,
+    });
+    setShowPick(false);
+  };
 
   const saveState = saving ? (
     <span className="text-xs text-slate-400">Speichert…</span>
@@ -785,20 +859,46 @@ export default function CalcEditorPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {skMatRows.map(({ m, i }) => (
-                        <tr key={i} className={isUsed.skMaterial(m) ? usedRow : undefined}>
-                          <td className={`${td} w-32`}><TextInput value={m.comment} onChange={(e) => updateRow("skMaterials", i, { comment: e.target.value })} /></td>
-                          <td className={td}><TextInput value={m.name} onChange={(e) => updateRow("skMaterials", i, { name: e.target.value })} /></td>
-                          <td className={`${td} w-32`}><TextInput value={m.supplier} onChange={(e) => updateRow("skMaterials", i, { supplier: e.target.value })} /></td>
-                          <td className={`${td} w-20`}><NumInput value={m.qty} onValue={(v) => updateRow("skMaterials", i, { qty: v })} /></td>
-                          <td className={`${td} w-20`}><NumInput value={m.amount} onValue={(v) => updateRow("skMaterials", i, { amount: v })} /></td>
-                          <td className={`${td} w-24`}><NumInput value={m.unitPrice} onValue={(v) => updateRow("skMaterials", i, { unitPrice: v })} /></td>
-                          <td className={tdOut}>{fmtEur(result.skMatBase[i])}</td>
-                          <td className={`${tdOut} font-medium`}>{fmtEur(result.skMatPrices[i])}</td>
-                          <td className={td}>
-                            <RowButtons onCopy={() => duplicateRow("skMaterials", i)} onRemove={() => removeRow("skMaterials", i)} />
-                          </td>
-                        </tr>
+                      {skMatGroups.map((grp) => (
+                        <Fragment key={grp.name || "_ohne"}>
+                          {showSkMatGroups && (
+                            <tr className="bg-slate-100/80">
+                              <td colSpan={7} className="px-2 py-1.5 text-xs font-semibold text-slate-600 uppercase">
+                                {grp.name || "Sonstiges"}
+                                <button
+                                  onClick={() => {
+                                    setHideSkMat(false);
+                                    addRow("skMaterials", { comment: "", name: "", supplier: "", qty: 0, amount: 0, unitPrice: 0, group: grp.name });
+                                  }}
+                                  className="ml-2 text-blue-500 hover:text-blue-700 normal-case font-normal"
+                                >
+                                  + Zeile
+                                </button>
+                              </td>
+                              <td className="px-2 py-1.5 text-right text-xs font-semibold text-slate-600 whitespace-nowrap">
+                                {fmtEur(skMatGroupTotal(grp.name))}
+                              </td>
+                              <td></td>
+                            </tr>
+                          )}
+                          {grp.rows.map(({ m, i }) => (
+                            <tr key={i} className={isUsed.skMaterial(m) ? usedRow : undefined}>
+                              <td className={`${td} w-32`}><TextInput value={m.comment} onChange={(e) => updateRow("skMaterials", i, { comment: e.target.value })} /></td>
+                              <td className={td}><TextInput value={m.name} onChange={(e) => updateRow("skMaterials", i, { name: e.target.value })} /></td>
+                              <td className={`${td} w-32`}><TextInput value={m.supplier} onChange={(e) => updateRow("skMaterials", i, { supplier: e.target.value })} /></td>
+                              <td className={`${td} w-20`}><NumInput value={m.qty} onValue={(v) => updateRow("skMaterials", i, { qty: v })} /></td>
+                              <td className={`${td} w-20`}><NumInput value={m.amount} onValue={(v) => updateRow("skMaterials", i, { amount: v })} /></td>
+                              <td className={`${td} w-24`}><NumInput value={m.unitPrice} onValue={(v) => updateRow("skMaterials", i, { unitPrice: v })} /></td>
+                              <td className={tdOut}>{fmtEur(result.skMatBase[i])}</td>
+                              <td className={`${tdOut} font-medium`} title={m.noSurcharge ? "Ohne Verschnitt-Zuschlag" : undefined}>
+                                {fmtEur(result.skMatPrices[i])}
+                              </td>
+                              <td className={td}>
+                                <RowButtons onCopy={() => duplicateRow("skMaterials", i)} onRemove={() => removeRow("skMaterials", i)} />
+                              </td>
+                            </tr>
+                          ))}
+                        </Fragment>
                       ))}
                     </tbody>
                   </table>
@@ -806,16 +906,19 @@ export default function CalcEditorPage() {
                 {hideSkMat && skMatRows.length < data.skMaterials.length && (
                   <p className="text-xs text-slate-400 mt-1">{data.skMaterials.length - skMatRows.length} leere Positionen ausgeblendet – Haken oben entfernen zum Anzeigen.</p>
                 )}
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setHideSkMat(false);
-                    addRow("skMaterials", { comment: "", name: "", supplier: "", qty: 0, amount: 0, unitPrice: 0 });
-                  }}
-                >
-                  + Zeile
-                </Button>
-                <p className="text-xs text-slate-400 mt-1">Tipp: „Kg / m²" leer lassen (0) bei Tafel- oder Pauschalpreisen – dann gilt Stückzahl × Preis.</p>
+                <div className="flex gap-2 items-center">
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setHideSkMat(false);
+                      addRow("skMaterials", { comment: "", name: "", supplier: "", qty: 0, amount: 0, unitPrice: 0, group: "" });
+                    }}
+                  >
+                    + Zeile
+                  </Button>
+                  <Button variant="ghost" onClick={openPicker}>📎 Aus Kalkulation übernehmen</Button>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">Tipp: „Kg / m²" leer lassen (0) bei Tafel- oder Pauschalpreisen – dann gilt Stückzahl × Preis. Mit „Aus Kalkulation übernehmen" z. B. ein separat kalkuliertes Laufrad als Position einfügen (Herstellkosten, ohne Verschnitt-Zuschlag).</p>
                 <div className="grid sm:grid-cols-3 gap-3 mt-3">
                   <Field label="Verschnitt / Zuschlag (%)">
                     <NumInput value={data.materialSurcharge * 100} onValue={(v) => upd({ materialSurcharge: v / 100 })} />
@@ -847,22 +950,46 @@ export default function CalcEditorPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {skWorkRows.map(({ w, i }) => (
-                        <tr key={i} className={isUsed.skWork(w) ? usedRow : undefined}>
-                          <td className={td}><TextInput value={w.name} onChange={(e) => updateRow("skWorks", i, { name: e.target.value })} /></td>
-                          <td className={`${td} w-24`}><NumInput value={w.qty} onValue={(v) => updateRow("skWorks", i, { qty: v })} /></td>
-                          <td className={`${td} w-28`}>
-                            <NumInput
-                              value={w.hours}
-                              onValue={(v) => updateRow("skWorks", i, { hours: v, ...(v > 0 && !w.qty ? { qty: 1 } : {}) })}
-                            />
-                          </td>
-                          <td className={`${td} w-24`}><NumInput value={w.rate} onValue={(v) => updateRow("skWorks", i, { rate: v })} /></td>
-                          <td className={`${tdOut} font-medium`}>{result.skWorkPrices[i] > 0 ? fmtEur(result.skWorkPrices[i]) : "–"}</td>
-                          <td className={td}>
-                            <RowButtons onRemove={() => removeRow("skWorks", i)} />
-                          </td>
-                        </tr>
+                      {skWorkGroups.map((grp) => (
+                        <Fragment key={grp.name || "_ohne"}>
+                          {showSkWorkGroups && (
+                            <tr className="bg-slate-100/80">
+                              <td colSpan={4} className="px-2 py-1.5 text-xs font-semibold text-slate-600 uppercase">
+                                {grp.name || "Sonstiges"}
+                                <button
+                                  onClick={() => {
+                                    setHideSkWorks(false);
+                                    addRow("skWorks", { name: "", qty: 0, hours: 0, rate: 58, group: grp.name });
+                                  }}
+                                  className="ml-2 text-blue-500 hover:text-blue-700 normal-case font-normal"
+                                >
+                                  + Zeile
+                                </button>
+                              </td>
+                              <td className="px-2 py-1.5 text-right text-xs font-semibold text-slate-600 whitespace-nowrap">
+                                {fmtEur(skWorkGroupTotal(grp.name))}
+                              </td>
+                              <td></td>
+                            </tr>
+                          )}
+                          {grp.rows.map(({ w, i }) => (
+                            <tr key={i} className={isUsed.skWork(w) ? usedRow : undefined}>
+                              <td className={td}><TextInput value={w.name} onChange={(e) => updateRow("skWorks", i, { name: e.target.value })} /></td>
+                              <td className={`${td} w-24`}><NumInput value={w.qty} onValue={(v) => updateRow("skWorks", i, { qty: v })} /></td>
+                              <td className={`${td} w-28`}>
+                                <NumInput
+                                  value={w.hours}
+                                  onValue={(v) => updateRow("skWorks", i, { hours: v, ...(v > 0 && !w.qty ? { qty: 1 } : {}) })}
+                                />
+                              </td>
+                              <td className={`${td} w-24`}><NumInput value={w.rate} onValue={(v) => updateRow("skWorks", i, { rate: v })} /></td>
+                              <td className={`${tdOut} font-medium`}>{result.skWorkPrices[i] > 0 ? fmtEur(result.skWorkPrices[i]) : "–"}</td>
+                              <td className={td}>
+                                <RowButtons onRemove={() => removeRow("skWorks", i)} />
+                              </td>
+                            </tr>
+                          ))}
+                        </Fragment>
                       ))}
                     </tbody>
                   </table>
@@ -943,6 +1070,19 @@ export default function CalcEditorPage() {
               </div>
             </div>
           </div>
+          {groupCosts.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-4">
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Kosten je Baugruppe</h3>
+              <div className="space-y-1 text-sm">
+                {groupCosts.map((g) => (
+                  <div key={g.name} className="flex justify-between">
+                    <span className="text-slate-600">{g.name}</span>
+                    <span className="font-medium text-slate-800">{fmtEur(g.value)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="bg-white rounded-xl border border-slate-200 p-4 text-xs text-slate-500 space-y-1">
             <div>Erstellt von: {calc.created_by_name ?? "–"}</div>
             <div>Typ: {CALC_TYPE_LABELS[calc.calc_type]} · Version {calc.version}</div>
@@ -951,6 +1091,52 @@ export default function CalcEditorPage() {
           </div>
         </div>
       </div>
+
+      {showPick && (
+        <Modal title="Kalkulation als Position übernehmen" onClose={() => setShowPick(false)} wide>
+          <div className="space-y-3">
+            <TextInput
+              placeholder="Suchen: Titel, Kunde…"
+              value={pickQ}
+              onChange={(e) => setPickQ(e.target.value)}
+              autoFocus
+            />
+            {!pickRows ? (
+              <Spinner />
+            ) : (
+              <div className="max-h-80 overflow-auto divide-y divide-slate-100">
+                {pickRows
+                  .filter(
+                    (r) =>
+                      !pickQ ||
+                      `${r.title} ${r.customer_name} ${r.drawing_no}`.toLowerCase().includes(pickQ.toLowerCase())
+                  )
+                  .slice(0, 50)
+                  .map((r) => (
+                    <button
+                      key={r.id}
+                      onClick={() => insertSubCalc(r)}
+                      className="w-full text-left px-3 py-2 hover:bg-blue-50 flex justify-between items-center gap-3"
+                    >
+                      <span>
+                        <span className="font-medium text-slate-800">{r.title || "(ohne Titel)"}</span>{" "}
+                        <span className="text-xs text-slate-400">
+                          V{r.version} · {(CALC_TYPE_LABELS as any)[r.calc_type] ?? r.calc_type}
+                          {r.customer_name && ` · ${r.customer_name}`}
+                        </span>
+                      </span>
+                      <span className="text-sm font-semibold whitespace-nowrap">{fmtEur(r.manufacturing_cost)} HK</span>
+                    </button>
+                  ))}
+              </div>
+            )}
+            <p className="text-xs text-slate-400">
+              Übernommen werden die Herstellkosten (HK) als Position ohne Verschnitt-Zuschlag – der Gewinnzuschlag
+              dieser Kalkulation wird am Ende auf alles aufgeschlagen.
+            </p>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

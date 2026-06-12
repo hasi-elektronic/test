@@ -126,7 +126,8 @@ function calcZuschlag(d: CalcData): CalcResult {
 
   const skMatBase = d.skMaterials.map((m) => (m.qty || 0) * (m.amount || 1) * (m.unitPrice || 0));
   const surcharge = d.materialSurcharge || 0;
-  const skMatPrices = skMatBase.map((b) => b * (1 + surcharge));
+  // Unterkalkulationen u. ä. (noSurcharge) erhalten keinen Verschnitt-Zuschlag
+  const skMatPrices = skMatBase.map((b, i) => b * (1 + (d.skMaterials[i].noSurcharge ? 0 : surcharge)));
   const skMatSubtotal = sum(skMatPrices);
   const skSpecialSurcharge = skMatSubtotal * (d.materialSpecialSurcharge || 0);
   const materialSum = skMatSubtotal + skSpecialSurcharge;

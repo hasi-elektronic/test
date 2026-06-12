@@ -67,6 +67,8 @@ export interface SkMaterialItem {
   qty: number; // Stückzahl
   amount: number; // Kg bzw. m² je Einheit (0 → 1, z. B. Tafel-/Pauschalpreise)
   unitPrice: number; // Preis je Kg / m² / Stück
+  group?: string; // Baugruppe (Gehäuse, Laufrad, …)
+  noSurcharge?: boolean; // z. B. eingefügte Unterkalkulationen: kein Verschnitt-Zuschlag
 }
 
 export interface SkWorkItem {
@@ -74,6 +76,7 @@ export interface SkWorkItem {
   qty: number; // Stückzahl
   hours: number; // Arbeitszeit (h)
   rate: number; // Stundensatz
+  group?: string; // Baugruppe
 }
 
 export interface AreaItem {
@@ -196,6 +199,7 @@ export interface StepTemplate {
   name: string;
   rate: number;
   setup_min: number;
+  grp: string;
 }
 
 export interface MaterialPreset {
@@ -205,6 +209,7 @@ export interface MaterialPreset {
   comment: string;
   supplier: string;
   unit_price: number;
+  grp: string;
 }
 
 export interface ShippingMaster {
