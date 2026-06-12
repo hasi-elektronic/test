@@ -9,11 +9,13 @@ import type {
   ExternalItem,
   Material,
   MaterialItem,
+  MaterialPreset,
   Sachbearbeiter,
   ShippingItem,
   ShippingMaster,
   SkMaterialItem,
   SkWorkItem,
+  Supplier,
   WorkItem,
 } from "../../../shared/types";
 import { CALC_TYPE_LABELS, STATUS_LABELS } from "../../../shared/types";
@@ -100,6 +102,8 @@ export default function CalcEditorPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [shipMaster, setShipMaster] = useState<ShippingMaster[]>([]);
   const [bearbeiter, setBearbeiter] = useState<Sachbearbeiter[]>([]);
+  const [suppliersList, setSuppliersList] = useState<Supplier[]>([]);
+  const [presets, setPresets] = useState<MaterialPreset[]>([]);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -128,13 +132,18 @@ export default function CalcEditorPage() {
       api.get<Customer[]>("/customers"),
       api.get<ShippingMaster[]>("/shipping_items"),
       api.get<Sachbearbeiter[]>("/sachbearbeiter"),
-    ]).then(([c, m, cu, sh, sb]) => {
+      api.get<Supplier[]>("/suppliers"),
+    ]).then(([c, m, cu, sh, sb, sup]) => {
       setCalc(c);
       setData(c.data);
       setMaterials(m.filter((x) => x.active));
       setCustomers(cu);
       setShipMaster(sh);
       setBearbeiter(sb);
+      setSuppliersList(sup);
+      if (c.calc_type === "schallkabine" || c.calc_type === "ventilator") {
+        api.get<{ presets: MaterialPreset[] }>(`/templates?type=${c.calc_type}`).then((t) => setPresets(t.presets));
+      }
       // Bei bestehenden Kalkulationen lange Vorlagen-Listen automatisch filtern
       setHideWorks((c.data.works ?? []).some(isUsed.work));
       setHideSkWorks((c.data.skWorks ?? []).some(isUsed.skWork));
@@ -398,8 +407,22 @@ export default function CalcEditorPage() {
     <span className="text-xs text-green-600">✓ Gespeichert {savedAt.toLocaleTimeString("de-DE")}</span>
   ) : null;
 
+  // Auswahllisten für Maus-Bedienung (Klick auf den Pfeil im Feld bzw. Doppelklick zeigt alle Einträge)
+  const vorlagenNamen = [...new Set(presets.map((p) => p.name))];
+  const lieferantenNamen = [...new Set([...materials.map((m) => m.name), ...suppliersList.map((s) => s.name)])];
+
   return (
     <div className="max-w-7xl space-y-5" onKeyDown={handleEnterNav}>
+      <datalist id="dl-vorlagen">
+        {vorlagenNamen.map((n) => (
+          <option key={n} value={n} />
+        ))}
+      </datalist>
+      <datalist id="dl-lieferanten">
+        {lieferantenNamen.map((n) => (
+          <option key={n} value={n} />
+        ))}
+      </datalist>
       {/* Kopfzeile */}
       <div className="flex flex-wrap items-center gap-3 justify-between">
         <div>
@@ -691,7 +714,7 @@ export default function CalcEditorPage() {
                       {extRows.map(({ e, i }) => (
                         <tr key={i} className={isUsed.external(e) ? usedRow : undefined}>
                           <td className={td}><TextInput value={e.name} onChange={(ev) => updateRow("externals", i, { name: ev.target.value })} /></td>
-                          <td className={`${td} w-40`}><TextInput value={e.supplier} onChange={(ev) => updateRow("externals", i, { supplier: ev.target.value })} /></td>
+                          <td className={`${td} w-40`}><TextInput value={e.supplier} list="dl-lieferanten" onChange={(ev) => updateRow("externals", i, { supplier: ev.target.value })} /></td>
                           <td className={`${td} w-32`}><TextInput value={e.offerNo} onChange={(ev) => updateRow("externals", i, { offerNo: ev.target.value })} /></td>
                           <td className={`${td} w-28`}><NumInput value={e.price} onValue={(v) => updateRow("externals", i, { price: v })} /></td>
                           <td className="px-2 py-1 text-center">
@@ -884,8 +907,33 @@ export default function CalcEditorPage() {
                           {grp.rows.map(({ m, i }) => (
                             <tr key={i} className={isUsed.skMaterial(m) ? usedRow : undefined}>
                               <td className={`${td} w-32`}><TextInput value={m.comment} onChange={(e) => updateRow("skMaterials", i, { comment: e.target.value })} /></td>
-                              <td className={td}><TextInput value={m.name} onChange={(e) => updateRow("skMaterials", i, { name: e.target.value })} /></td>
-                              <td className={`${td} w-32`}><TextInput value={m.supplier} onChange={(e) => updateRow("skMaterials", i, { supplier: e.target.value })} /></td>
+                              <td className={td}>
+                                <TextInput
+                                  value={m.name}
+                                  list="dl-vorlagen"
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    const p = presets.find((x) => x.name === v);
+                                    updateRow("skMaterials", i, {
+                                      name: v,
+                                      ...(p
+                                        ? {
+                                            supplier: m.supplier || p.supplier,
+                                            unitPrice: m.unitPrice || p.unit_price,
+                                            comment: m.comment || p.comment,
+                                          }
+                                        : {}),
+                                    });
+                                  }}
+                                />
+                              </td>
+                              <td className={`${td} w-32`}>
+                                <TextInput
+                                  value={m.supplier}
+                                  list="dl-lieferanten"
+                                  onChange={(e) => updateRow("skMaterials", i, { supplier: e.target.value })}
+                                />
+                              </td>
                               <td className={`${td} w-20`}><NumInput value={m.qty} onValue={(v) => updateRow("skMaterials", i, { qty: v })} /></td>
                               <td className={`${td} w-20`}><NumInput value={m.amount} onValue={(v) => updateRow("skMaterials", i, { amount: v })} /></td>
                               <td className={`${td} w-24`}><NumInput value={m.unitPrice} onValue={(v) => updateRow("skMaterials", i, { unitPrice: v })} /></td>
