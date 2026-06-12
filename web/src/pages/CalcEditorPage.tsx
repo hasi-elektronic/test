@@ -115,25 +115,19 @@ function HoursSelect({ value, onValue }: { value: number; onValue: (v: number) =
   );
 }
 
-// Lieferant/Material-Auswahl: zeigt beim Öffnen ALLE Werkstoffe, Lieferanten und Vorlagen-Quellen
+// Material/Quelle-Auswahl: zeigt beim Öffnen alle Werkstoffe und Vorlagen-Quellen
 function LieferantSelect({
   value,
   onChange,
   materials,
-  suppliers,
   extra,
 }: {
   value: string;
   onChange: (v: string) => void;
   materials: Material[];
-  suppliers: Supplier[];
   extra: string[];
 }) {
-  const known =
-    value === "" ||
-    materials.some((m) => m.name === value) ||
-    suppliers.some((s) => s.name === value) ||
-    extra.includes(value);
+  const known = value === "" || materials.some((m) => m.name === value) || extra.includes(value);
   return (
     <Select value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">–</option>
@@ -141,11 +135,6 @@ function LieferantSelect({
       <optgroup label="Material">
         {materials.map((m) => (
           <option key={`m${m.id}`} value={m.name}>{m.name}</option>
-        ))}
-      </optgroup>
-      <optgroup label="Lieferanten">
-        {suppliers.map((s) => (
-          <option key={`s${s.id}`} value={s.name}>{s.name}</option>
         ))}
       </optgroup>
       {extra.length > 0 && (
@@ -509,11 +498,7 @@ export default function CalcEditorPage() {
   const vorlagenNamen = [...new Set(presets.map((p) => p.name))];
   const lieferantenNamen = [...new Set([...materials.map((m) => m.name), ...suppliersList.map((s) => s.name)])];
   const presetLieferanten = [
-    ...new Set(
-      presets
-        .map((p) => p.supplier)
-        .filter((s) => s && !materials.some((m) => m.name === s) && !suppliersList.some((x) => x.name === s))
-    ),
+    ...new Set(presets.map((p) => p.supplier).filter((s) => s && !materials.some((m) => m.name === s))),
   ];
 
   return (
@@ -1090,7 +1075,6 @@ export default function CalcEditorPage() {
                                     });
                                   }}
                                   materials={materials}
-                                  suppliers={suppliersList}
                                   extra={presetLieferanten}
                                 />
                               </td>
