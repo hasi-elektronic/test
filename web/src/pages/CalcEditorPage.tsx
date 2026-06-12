@@ -77,6 +77,24 @@ const td = "px-1 py-1";
 const tdOut = "px-2 py-1 text-right text-sm text-slate-700 whitespace-nowrap";
 const usedRow = "bg-blue-50/50";
 
+// Kompakter Form-Umschalter: rund (Ø) / eckig (Breite×Höhe)
+function ShapeToggle({ value, onChange }: { value: "rund" | "eckig"; onChange: (v: "rund" | "eckig") => void }) {
+  const btn = (active: boolean) =>
+    `flex items-center justify-center w-8 py-2 transition ${
+      active ? "bg-blue-600 text-white" : "bg-white text-slate-300 hover:text-slate-500 hover:bg-slate-50"
+    }`;
+  return (
+    <div className="inline-flex rounded-lg border border-slate-300 overflow-hidden">
+      <button type="button" title="Rund – nur Durchmesser eingeben" onClick={() => onChange("rund")} className={btn(value === "rund")}>
+        <span className="block w-3 h-3 rounded-full border-2 border-current" />
+      </button>
+      <button type="button" title="Eckig – Breite × Höhe" onClick={() => onChange("eckig")} className={`${btn(value === "eckig")} border-l border-slate-300`}>
+        <span className="block w-3 h-3 border-2 border-current" />
+      </button>
+    </div>
+  );
+}
+
 function RowButtons({ onCopy, onRemove }: { onCopy?: () => void; onRemove: () => void }) {
   return (
     <div className="flex items-center whitespace-nowrap">
@@ -563,14 +581,11 @@ export default function CalcEditorPage() {
                               ))}
                             </Select>
                           </td>
-                          <td className={`${td} w-24`}>
-                            <Select
+                          <td className={`${td} w-20 text-center`}>
+                            <ShapeToggle
                               value={m.shape ?? "eckig"}
-                              onChange={(e) => updateRow("materials", i, { shape: e.target.value })}
-                            >
-                              <option value="eckig">⬛ eckig</option>
-                              <option value="rund">⭕ rund</option>
-                            </Select>
+                              onChange={(v) => updateRow("materials", i, { shape: v })}
+                            />
                           </td>
                           <td className={`${td} w-24`}>
                             <NumInput
@@ -623,7 +638,7 @@ export default function CalcEditorPage() {
                   + Zeile
                 </Button>
                 <p className="text-xs text-slate-400 mt-1">
-                  ⭕ Rund: nur Durchmesser eingeben – Gewicht wird aus quadratischem Zuschnitt Ø×Ø gerechnet (Verschnitt im Verbrauch enthalten).
+                  Form „rund": nur Durchmesser eingeben – Gewicht wird aus quadratischem Zuschnitt Ø×Ø gerechnet (Verschnitt im Verbrauch enthalten).
                 </p>
                 {priceWarnings.length > 0 && (
                   <div className="mt-3 text-xs bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2 space-y-1">
