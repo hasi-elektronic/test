@@ -259,6 +259,7 @@ crud(
     { name: "name" },
     { name: "rate", numeric: true },
     { name: "setup_min", numeric: true },
+    { name: "grp" },
   ],
   "calc_type, pos"
 );
@@ -272,6 +273,7 @@ crud(
     { name: "comment" },
     { name: "supplier" },
     { name: "unit_price", numeric: true },
+    { name: "grp" },
   ],
   "calc_type, pos, name"
 );

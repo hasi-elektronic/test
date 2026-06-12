@@ -170,13 +170,14 @@ export default function StammdatenPage() {
         <MasterTable
           endpoint="step_templates"
           title="Arbeitsgang"
-          defaultRow={{ calc_type: "laufrad", pos: 0, name: "", rate: 58, setup_min: 0 }}
+          defaultRow={{ calc_type: "laufrad", pos: 0, name: "", rate: 58, setup_min: 0, grp: "" }}
           fields={[
             { key: "calc_type", label: "Kalkulationstyp", type: "select", options: calcTypeOptions },
             { key: "pos", label: "Pos.", type: "number" },
             { key: "name", label: "Arbeitsgang", type: "text" },
             { key: "rate", label: "Stundensatz €/h", type: "number", showEur: true },
             { key: "setup_min", label: "Rüstzeit (min)", type: "number" },
+            { key: "grp", label: "Baugruppe", type: "text" },
           ]}
         />
       )}
@@ -204,7 +205,7 @@ export default function StammdatenPage() {
         <MasterTable
           endpoint="material_presets"
           title="Material-Vorlage"
-          defaultRow={{ calc_type: "schallkabine", pos: 0, name: "", comment: "", supplier: "", unit_price: 0 }}
+          defaultRow={{ calc_type: "schallkabine", pos: 0, name: "", comment: "", supplier: "", unit_price: 0, grp: "" }}
           fields={[
             { key: "calc_type", label: "Kalkulationstyp", type: "select", options: [
               { value: "schallkabine", label: "Schallkabine" },
@@ -215,6 +216,7 @@ export default function StammdatenPage() {
             { key: "comment", label: "Kommentar", type: "text" },
             { key: "supplier", label: "Lieferant", type: "text" },
             { key: "unit_price", label: "Preis/Einheit", type: "number", showEur: true },
+            { key: "grp", label: "Baugruppe", type: "text" },
           ]}
         />
       )}
