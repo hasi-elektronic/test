@@ -186,6 +186,7 @@ export interface Material {
   note: string;
   sort: number;
   active: number;
+  price_updated_at: string | null;
 }
 
 export interface StepTemplate {

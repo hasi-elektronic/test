@@ -190,19 +190,66 @@ function crud(table: string, columns: ColumnSpec[], orderBy: string) {
   });
 }
 
-crud(
-  "materials",
-  [
-    { name: "name" },
-    { name: "price_per_kg", numeric: true },
-    { name: "density", numeric: true },
-    { name: "color_group" },
-    { name: "note" },
-    { name: "sort", numeric: true },
-    { name: "active", numeric: true },
-  ],
-  "sort, name"
-);
+// Materialien: eigene Routen, damit price_updated_at bei Preisänderung
+// automatisch gesetzt wird (Grundlage für die Veraltet-Warnung im Editor)
+app.get("/materials", async (c) => {
+  const { results } = await c.env.DB.prepare("SELECT * FROM materials ORDER BY sort, name").all();
+  return c.json(results);
+});
+
+app.post("/materials", async (c) => {
+  const b = await c.req.json();
+  const price = Number(b.price_per_kg) || 0;
+  const res = await c.env.DB.prepare(
+    `INSERT INTO materials (name, price_per_kg, density, color_group, note, sort, active, price_updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  )
+    .bind(
+      (b.name ?? "") + "",
+      price,
+      Number(b.density) || 0,
+      (b.color_group ?? "") + "",
+      (b.note ?? "") + "",
+      Number(b.sort) || 0,
+      b.active === 0 ? 0 : 1,
+      price > 0 ? new Date().toISOString() : null
+    )
+    .run();
+  return c.json({ id: res.meta.last_row_id });
+});
+
+app.put("/materials/:id", async (c) => {
+  const id = Number(c.req.param("id"));
+  const b = await c.req.json();
+  const price = Number(b.price_per_kg) || 0;
+  const old = await c.env.DB.prepare("SELECT price_per_kg, price_updated_at FROM materials WHERE id = ?")
+    .bind(id)
+    .first<{ price_per_kg: number; price_updated_at: string | null }>();
+  const priceChanged = !old || old.price_per_kg !== price;
+  const updatedAt = price > 0 ? (priceChanged ? new Date().toISOString() : old?.price_updated_at ?? null) : null;
+  await c.env.DB.prepare(
+    `UPDATE materials SET name = ?, price_per_kg = ?, density = ?, color_group = ?, note = ?, sort = ?, active = ?,
+     price_updated_at = ? WHERE id = ?`
+  )
+    .bind(
+      (b.name ?? "") + "",
+      price,
+      Number(b.density) || 0,
+      (b.color_group ?? "") + "",
+      (b.note ?? "") + "",
+      Number(b.sort) || 0,
+      b.active === 0 ? 0 : 1,
+      updatedAt,
+      id
+    )
+    .run();
+  return c.json({ ok: true });
+});
+
+app.delete("/materials/:id", async (c) => {
+  await c.env.DB.prepare("DELETE FROM materials WHERE id = ?").bind(Number(c.req.param("id"))).run();
+  return c.json({ ok: true });
+});
 
 crud(
   "step_templates",

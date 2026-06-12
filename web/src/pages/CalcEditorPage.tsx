@@ -17,7 +17,7 @@ import type {
   WorkItem,
 } from "../../../shared/types";
 import { CALC_TYPE_LABELS, STATUS_LABELS } from "../../../shared/types";
-import { fmtEur, fmtNum } from "../format";
+import { fmtDate, fmtEur, fmtNum } from "../format";
 import { Button, Card, Field, NumInput, Select, Spinner, TextInput } from "../components/ui";
 
 function SectionSum({ label, value }: { label: string; value: number }) {
@@ -275,6 +275,39 @@ export default function CalcEditorPage() {
 
   const isSk = data.type === "schallkabine" || data.type === "ventilator";
 
+  // Preis-Warnungen für den Sachbearbeiter: fehlende, veraltete oder stark abweichende Materialpreise
+  const STALE_DAYS = 90;
+  const priceWarnings: string[] = [];
+  if (!isSk) {
+    const byName: Record<string, Material> = {};
+    for (const m of materials) byName[m.name] = m;
+    data.materials.forEach((row, idx) => {
+      if (!row.material) return;
+      const master = byName[row.material];
+      if (!master) return;
+      const pos = `Pos. ${idx + 1} (${row.material})`;
+      if (!master.price_per_kg) {
+        priceWarnings.push(`${pos}: kein Preis/Kg in den Stammdaten gepflegt – Preis bitte prüfen.`);
+        return;
+      }
+      if (master.price_updated_at) {
+        const age = (Date.now() - new Date(master.price_updated_at.replace(" ", "T")).getTime()) / 86_400_000;
+        if (age > STALE_DAYS) {
+          priceWarnings.push(
+            `${pos}: Stammdaten-Preis zuletzt am ${fmtDate(master.price_updated_at)} aktualisiert (älter als ${STALE_DAYS} Tage) – bitte aktualisieren.`
+          );
+        }
+      } else {
+        priceWarnings.push(`${pos}: Stammdaten-Preis ohne Aktualisierungsdatum – bitte prüfen.`);
+      }
+      if (row.pricePerKg > 0 && Math.abs(row.pricePerKg - master.price_per_kg) / master.price_per_kg > 0.3) {
+        priceWarnings.push(
+          `${pos}: eingetragener Preis ${fmtEur(row.pricePerKg)}/kg weicht stark vom Stammdaten-Preis ${fmtEur(master.price_per_kg)}/kg ab.`
+        );
+      }
+    });
+  }
+
   // Gefilterte Sichten mit Original-Index
   const matRows = data.materials.map((m, i) => ({ m, i })).filter(({ m }) => !hideMat || isUsed.material(m));
   const workRows = data.works.map((w, i) => ({ w, i })).filter(({ w }) => !hideWorks || isUsed.work(w));
@@ -456,6 +489,13 @@ export default function CalcEditorPage() {
                 >
                   + Zeile
                 </Button>
+                {priceWarnings.length > 0 && (
+                  <div className="mt-3 text-xs bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2 space-y-1">
+                    {priceWarnings.map((w, i) => (
+                      <div key={i}>⚠ {w}</div>
+                    ))}
+                  </div>
+                )}
                 <div className="grid sm:grid-cols-3 gap-3 mt-3">
                   <Field label="Gesamtgewicht (Kg)">
                     <div className="px-2.5 py-1.5 text-sm text-slate-600">{fmtNum(result.totalWeight)} kg</div>
