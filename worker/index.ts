@@ -69,11 +69,6 @@ app.post("/auth/logout", async (c) => {
 
 // Produktbilder aus R2 (Bucket "sickinger") – öffentlich, vor der Auth-Middleware.
 // Erwartete Dateinamen: laufrad / drueckteile / baugruppe / schallkabine / ventilator + .jpg/.jpeg/.png/.webp
-app.get("/typen", async (c) => {
-  const list = await c.env.BILDER.list();
-  return c.json(list.objects.map((o) => o.key));
-});
-
 // Alias-Zuordnung für die hochgeladenen Screenshot-Dateien;
 // Dateien mit dem richtigen Typnamen (z. B. laufrad.jpg) haben Vorrang.
 const BILD_ALIAS: Record<string, string[]> = {
@@ -84,9 +79,17 @@ const BILD_ALIAS: Record<string, string[]> = {
   schallkabine: ["schallkabine"],
 };
 
+app.get("/typen", async (c) => {
+  // Nur die den Typen zugeordneten Dateien auflisten – übrige Bucket-Inhalte bleiben privat
+  const erlaubt = new Set(Object.values(BILD_ALIAS).flat());
+  const list = await c.env.BILDER.list();
+  return c.json(list.objects.map((o) => o.key).filter((k) => erlaubt.has(k.replace(/\.\w+$/, ""))));
+});
+
 app.get("/typen/:type", async (c) => {
   const t = c.req.param("type").replace(/[^\w-]/g, "");
-  for (const name of BILD_ALIAS[t] ?? [t]) {
+  if (!(t in BILD_ALIAS)) return c.json({ error: "Nicht gefunden" }, 404);
+  for (const name of BILD_ALIAS[t]) {
     for (const ext of ["jpg", "jpeg", "png", "webp"]) {
       const obj = await c.env.BILDER.get(`${name}.${ext}`);
       if (obj) {
@@ -541,7 +544,7 @@ app.get("/templates", async (c) => {
     .bind(type)
     .all();
   let presets: unknown[] = [];
-  if (type === "schallkabine" || type === "ventilator") {
+  if (type === "schallkabine" || type === "ventilator" || type === "baugruppe") {
     const { results } = await c.env.DB.prepare(
       "SELECT * FROM material_presets WHERE calc_type = ? ORDER BY pos"
     )

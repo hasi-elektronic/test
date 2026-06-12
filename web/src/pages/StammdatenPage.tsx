@@ -210,6 +210,7 @@ export default function StammdatenPage() {
             { key: "calc_type", label: "Kalkulationstyp", type: "select", options: [
               { value: "schallkabine", label: "Schallkabine" },
               { value: "ventilator", label: "Ventilator" },
+              { value: "baugruppe", label: "Baugruppe" },
             ] },
             { key: "pos", label: "Pos.", type: "number" },
             { key: "name", label: "Bezeichnung", type: "text" },

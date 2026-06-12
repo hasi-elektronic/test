@@ -78,7 +78,7 @@ function TypeImage({ type }: { type: CalcType }) {
 const TYPES: { type: CalcType; title: string; desc: string }[] = [
   { type: "laufrad", title: "Laufrad", desc: "Fan-Laufräder: Material nach Kg, Arbeitsgänge mit Rüst- & Fertigungszeit, externe Bearbeitung, Versand." },
   { type: "drueckteile", title: "Drückteile", desc: "Drückteile: Drücken, Abschneiden, Abbrennen – gleiche Kalkulationslogik wie Laufrad." },
-  { type: "baugruppe", title: "Baugruppe", desc: "Baugruppen / Schweißkonstruktionen: Biegen, Heften, Schweißen, Mechanik." },
+  { type: "baugruppe", title: "Baugruppe", desc: "Einzelne Baugruppen (Gehäuse, Düseneinheit, Bock, Grundrahmen …) – gleiche Logik wie Ventilator, mit Einzelpreis je Baugruppe." },
   { type: "schallkabine", title: "Schallkabine", desc: "Zuschlagskalkulation: Material nach m²/Kg mit Verschnitt-Zuschlag, stundenbasierte Fertigung, Angebotstext." },
   { type: "ventilator", title: "Ventilator", desc: "Komplette Ventilatoren: alle Bauteile (Gehäuse, Bock, Laufrad, Düse…) mit Verschnitt-Zuschlag, stundenbasierte Fertigung nach Baugruppen." },
 ];
@@ -90,7 +90,7 @@ export default function NewCalcPage() {
     const tpl = await api.get<{ steps: StepTemplate[]; presets: MaterialPreset[] }>(`/templates?type=${type}`);
     const data: CalcData = emptyCalcData(type);
 
-    if (type === "schallkabine" || type === "ventilator") {
+    if (type === "schallkabine" || type === "ventilator" || type === "baugruppe") {
       data.skWorks = tpl.steps.map((s) => ({ name: s.name, qty: 0, hours: 0, rate: s.rate, group: s.grp || "" }));
       data.skMaterials = tpl.presets.map((p) => ({
         comment: p.comment,
@@ -121,11 +121,6 @@ export default function NewCalcPage() {
           { name: "Beizen", supplier: "Inox" },
           { name: "Glühen", supplier: "Raiser" },
           { name: "WM-Nabe", supplier: "" },
-        ],
-        baugruppe: [
-          { name: "Nabe", supplier: "" },
-          { name: "Beizen", supplier: "Inox" },
-          { name: "", supplier: "" },
         ],
       };
       data.materials = (
