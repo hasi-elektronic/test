@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api";
-import { fmtEur, fmtDate } from "../format";
+import { fmtEur, fmtDate, fmtNum } from "../format";
 import { Button, Spinner } from "../components/ui";
 import type { CalcRow } from "../../../shared/types";
 import { CALC_TYPE_LABELS } from "../../../shared/types";
@@ -106,11 +106,38 @@ export default function OfferPrintPage() {
         .replace("{preis}", fmtEur(calc.sales_unit))
   ).trim();
 
+  // Produktbeschreibung automatisch aus der Kalkulation: Typ · Hauptabmessung · Werkstoff(e)
+  const specParts: string[] = [];
+  const typLabel = CALC_TYPE_LABELS[calc.calc_type];
+  if (titel.toLowerCase() !== typLabel.toLowerCase()) specParts.push(typLabel);
+
+  const d = calc.data;
+  const matDim = (m: { shape?: string; width: number; height: number; thickness: number }) => {
+    const dicke = m.thickness ? ` × ${fmtNum(m.thickness)} mm` : "";
+    if (m.shape === "rund") return m.width ? `Ø ${fmtNum(m.width)}${dicke}` : "";
+    return m.width && m.height ? `${fmtNum(m.width)} × ${fmtNum(m.height)}${dicke}` : "";
+  };
+  if (d.materials?.length) {
+    const used = d.materials.filter((m) => m.material || m.width || m.thickness);
+    if (used.length) {
+      const haupt = used.reduce((a, b) => ((b.width || 0) > (a.width || 0) ? b : a));
+      const dim = matDim(haupt);
+      if (dim) specParts.push(used.length > 1 ? `${dim} u. a.` : dim);
+      const werkstoffe = [...new Set(used.map((m) => m.material).filter(Boolean))];
+      if (werkstoffe.length) specParts.push(werkstoffe.join(", "));
+    }
+  } else if (d.skMaterials?.length) {
+    const teile = d.skMaterials.filter((m) => (m.qty || 0) > 0).length;
+    if (teile) specParts.push(`${teile} Positionen, komplett gefertigt`);
+  }
+  const produktSpec = specParts.join(" · ");
+
   // Positionstabelle (eine Position je Kalkulation)
   const positionen = [
     {
       nr: 1,
       bezeichnung: titel,
+      spec: produktSpec,
       detail: calc.drawing_no ? `Zeichnung ${calc.drawing_no}` : "",
       menge: `${qty} Stück`,
       einzel: calc.sales_unit,
@@ -224,6 +251,7 @@ export default function OfferPrintPage() {
                 <td className="px-3 py-2.5 align-top text-slate-500">{p.nr}</td>
                 <td className="px-3 py-2.5 align-top">
                   <div className="font-medium text-slate-800">{p.bezeichnung}</div>
+                  {p.spec && <div className="text-xs text-slate-500">{p.spec}</div>}
                   {p.detail && <div className="text-xs text-slate-400">{p.detail}</div>}
                 </td>
                 <td className="px-3 py-2.5 align-top text-right whitespace-nowrap">{p.menge}</td>
