@@ -2,9 +2,37 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api";
 import { fmtEur, fmtDate, fmtNum } from "../format";
-import { Button, Spinner } from "../components/ui";
-import type { CalcRow } from "../../../shared/types";
+import { Button, Field, Modal, NumInput, Spinner, TextInput } from "../components/ui";
+import type { CalcRow, OfferPosition } from "../../../shared/types";
 import { CALC_TYPE_LABELS } from "../../../shared/types";
+
+// Produktbeschreibung automatisch aus der Kalkulation: Typ · Hauptabmessung · Werkstoff(e)
+function produktSpecOf(c: CalcRow): string {
+  const parts: string[] = [];
+  const typLabel = CALC_TYPE_LABELS[c.calc_type];
+  const titel = c.title || typLabel;
+  if (titel.toLowerCase() !== typLabel.toLowerCase()) parts.push(typLabel);
+  const d = c.data;
+  const matDim = (m: { shape?: string; width: number; height: number; thickness: number }) => {
+    const dicke = m.thickness ? ` × ${fmtNum(m.thickness)} mm` : "";
+    if (m.shape === "rund") return m.width ? `Ø ${fmtNum(m.width)}${dicke}` : "";
+    return m.width && m.height ? `${fmtNum(m.width)} × ${fmtNum(m.height)}${dicke}` : "";
+  };
+  if (d.materials?.length) {
+    const used = d.materials.filter((m) => m.material || m.width || m.thickness);
+    if (used.length) {
+      const haupt = used.reduce((a, b) => ((b.width || 0) > (a.width || 0) ? b : a));
+      const dim = matDim(haupt);
+      if (dim) parts.push(used.length > 1 ? `${dim} u. a.` : dim);
+      const werkstoffe = [...new Set(used.map((m) => m.material).filter(Boolean))];
+      if (werkstoffe.length) parts.push(werkstoffe.join(", "));
+    }
+  } else if (d.skMaterials?.length) {
+    const teile = d.skMaterials.filter((m) => (m.qty || 0) > 0).length;
+    if (teile) parts.push(`${teile} Positionen, komplett gefertigt`);
+  }
+  return parts.join(" · ");
+}
 
 // CI-Farbe Manfred Sickinger
 const CI = "#1B5E9E";
@@ -82,10 +110,19 @@ export default function OfferPrintPage() {
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [logoOk, setLogoOk] = useState(true);
 
+  // Zusätzliche Angebotspositionen
+  const [extra, setExtra] = useState<OfferPosition[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [showPick, setShowPick] = useState(false);
+  const [pickRows, setPickRows] = useState<any[] | null>(null);
+  const [pickQ, setPickQ] = useState("");
+
   useEffect(() => {
     Promise.all([api.get<CalcRow>(`/calculations/${id}`), api.get<Record<string, string>>("/settings")]).then(
       ([c, s]) => {
         setCalc(c);
+        setExtra(c.data.offerPositions ?? []);
         setSettings(s);
       }
     );
@@ -106,44 +143,72 @@ export default function OfferPrintPage() {
         .replace("{preis}", fmtEur(calc.sales_unit))
   ).trim();
 
-  // Produktbeschreibung automatisch aus der Kalkulation: Typ · Hauptabmessung · Werkstoff(e)
-  const specParts: string[] = [];
-  const typLabel = CALC_TYPE_LABELS[calc.calc_type];
-  if (titel.toLowerCase() !== typLabel.toLowerCase()) specParts.push(typLabel);
-
-  const d = calc.data;
-  const matDim = (m: { shape?: string; width: number; height: number; thickness: number }) => {
-    const dicke = m.thickness ? ` × ${fmtNum(m.thickness)} mm` : "";
-    if (m.shape === "rund") return m.width ? `Ø ${fmtNum(m.width)}${dicke}` : "";
-    return m.width && m.height ? `${fmtNum(m.width)} × ${fmtNum(m.height)}${dicke}` : "";
-  };
-  if (d.materials?.length) {
-    const used = d.materials.filter((m) => m.material || m.width || m.thickness);
-    if (used.length) {
-      const haupt = used.reduce((a, b) => ((b.width || 0) > (a.width || 0) ? b : a));
-      const dim = matDim(haupt);
-      if (dim) specParts.push(used.length > 1 ? `${dim} u. a.` : dim);
-      const werkstoffe = [...new Set(used.map((m) => m.material).filter(Boolean))];
-      if (werkstoffe.length) specParts.push(werkstoffe.join(", "));
-    }
-  } else if (d.skMaterials?.length) {
-    const teile = d.skMaterials.filter((m) => (m.qty || 0) > 0).length;
-    if (teile) specParts.push(`${teile} Positionen, komplett gefertigt`);
-  }
-  const produktSpec = specParts.join(" · ");
-
-  // Positionstabelle (eine Position je Kalkulation)
+  // Position 1 = Hauptkalkulation, danach die Zusatzpositionen
   const positionen = [
     {
-      nr: 1,
       bezeichnung: titel,
-      spec: produktSpec,
+      spec: produktSpecOf(calc),
       detail: calc.drawing_no ? `Zeichnung ${calc.drawing_no}` : "",
-      menge: `${qty} Stück`,
+      menge: qty,
       einzel: calc.sales_unit,
       gesamt: calc.sales_total,
     },
+    ...extra.map((p) => ({
+      bezeichnung: p.bezeichnung,
+      spec: p.spec,
+      detail: "",
+      menge: p.menge || 1,
+      einzel: p.einzel || 0,
+      gesamt: (p.menge || 0) * (p.einzel || 0),
+    })),
   ];
+  const summe = positionen.reduce((a, p) => a + p.gesamt, 0);
+
+  const updExtra = (i: number, patch: Partial<OfferPosition>) =>
+    setExtra(extra.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
+  const removeExtra = (i: number) => setExtra(extra.filter((_, idx) => idx !== i));
+  const addFrei = () => setExtra([...extra, { bezeichnung: "", spec: "", menge: 1, einzel: 0 }]);
+
+  const openPicker = () => {
+    setShowPick(true);
+    if (!pickRows) api.get<any[]>("/calculations").then((r) => setPickRows(r.filter((x) => x.id !== calc.id)));
+  };
+  const addAusKalk = async (row: any) => {
+    const full = await api.get<CalcRow>(`/calculations/${row.id}`);
+    setExtra([
+      ...extra,
+      {
+        bezeichnung: full.title || CALC_TYPE_LABELS[full.calc_type],
+        spec: produktSpecOf(full),
+        menge: full.data.batchQty || 1,
+        einzel: full.sales_unit,
+        sourceId: full.id,
+      },
+    ]);
+    setShowPick(false);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await api.put(`/calculations/${calc.id}`, {
+        calc_type: calc.calc_type,
+        title: calc.title,
+        status: calc.status,
+        customer_id: calc.customer_id,
+        customer_name: calc.customer_name,
+        inquiry_no: calc.inquiry_no,
+        drawing_no: calc.drawing_no,
+        calc_date: calc.calc_date,
+        sachbearbeiter: calc.sachbearbeiter,
+        offer_text: calc.offer_text,
+        data: { ...calc.data, offerPositions: extra },
+      });
+      setSavedAt(new Date());
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -152,6 +217,60 @@ export default function OfferPrintPage() {
           ← Zurück zur Kalkulation
         </Link>
         <Button onClick={() => window.print()}>🖨 Drucken / Als PDF speichern</Button>
+      </div>
+
+      {/* Positions-Editor (nicht im Druck) */}
+      <div className="no-print bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-slate-800">Angebotspositionen</h2>
+          <div className="flex items-center gap-2">
+            {savedAt && <span className="text-xs text-green-600">✓ Gespeichert {savedAt.toLocaleTimeString("de-DE")}</span>}
+            <Button variant="secondary" onClick={openPicker}>+ Aus Kalkulation</Button>
+            <Button variant="secondary" onClick={addFrei}>+ Freie Position</Button>
+            <Button onClick={save} disabled={saving}>{saving ? "Speichern…" : "💾 Speichern"}</Button>
+          </div>
+        </div>
+        <div className="text-xs text-slate-500 mb-2">
+          Pos. 1 ist diese Kalkulation ({fmtEur(calc.sales_total)}). Weitere Positionen hier ergänzen – sie erscheinen im Angebot und werden zur Angebotssumme addiert.
+        </div>
+        {extra.length === 0 ? (
+          <p className="text-sm text-slate-400">Noch keine Zusatzpositionen.</p>
+        ) : (
+          <div className="space-y-2">
+            {extra.map((p, i) => (
+              <div key={i} className="flex gap-2 items-start">
+                <span className="text-xs text-slate-400 pt-2 w-6">{i + 2}.</span>
+                <div className="flex-1 grid gap-1">
+                  <TextInput
+                    placeholder="Bezeichnung"
+                    value={p.bezeichnung}
+                    onChange={(e) => updExtra(i, { bezeichnung: e.target.value })}
+                  />
+                  <TextInput
+                    placeholder="Beschreibung / Maße (optional)"
+                    value={p.spec}
+                    onChange={(e) => updExtra(i, { spec: e.target.value })}
+                    className="text-xs"
+                  />
+                </div>
+                <div className="w-16">
+                  <Field label="Menge">
+                    <NumInput value={p.menge} onValue={(v) => updExtra(i, { menge: v })} />
+                  </Field>
+                </div>
+                <div className="w-24">
+                  <Field label="Einzel €">
+                    <NumInput value={p.einzel} onValue={(v) => updExtra(i, { einzel: v })} />
+                  </Field>
+                </div>
+                <div className="w-24 text-right text-sm pt-6 font-medium">
+                  {fmtEur((p.menge || 0) * (p.einzel || 0))}
+                </div>
+                <button onClick={() => removeExtra(i)} className="text-slate-300 hover:text-red-500 pt-6">×</button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="bg-white shadow-sm border border-slate-200 rounded-xl p-10 print:shadow-none print:border-0 print:rounded-none print:p-0 flex flex-col print:min-h-[247mm]">
@@ -247,14 +366,14 @@ export default function OfferPrintPage() {
           </thead>
           <tbody>
             {positionen.map((p, i) => (
-              <tr key={p.nr} style={{ backgroundColor: i % 2 === 1 ? CI_LIGHT : "white" }}>
-                <td className="px-3 py-2.5 align-top text-slate-500">{p.nr}</td>
+              <tr key={i} style={{ backgroundColor: i % 2 === 1 ? CI_LIGHT : "white" }}>
+                <td className="px-3 py-2.5 align-top text-slate-500">{i + 1}</td>
                 <td className="px-3 py-2.5 align-top">
-                  <div className="font-medium text-slate-800">{p.bezeichnung}</div>
+                  <div className="font-medium text-slate-800">{p.bezeichnung || "—"}</div>
                   {p.spec && <div className="text-xs text-slate-500">{p.spec}</div>}
                   {p.detail && <div className="text-xs text-slate-400">{p.detail}</div>}
                 </td>
-                <td className="px-3 py-2.5 align-top text-right whitespace-nowrap">{p.menge}</td>
+                <td className="px-3 py-2.5 align-top text-right whitespace-nowrap">{p.menge} Stück</td>
                 <td className="px-3 py-2.5 align-top text-right whitespace-nowrap">{fmtEur(p.einzel)}</td>
                 <td className="px-3 py-2.5 align-top text-right font-medium whitespace-nowrap">{fmtEur(p.gesamt)}</td>
               </tr>
@@ -267,7 +386,7 @@ export default function OfferPrintPage() {
           <div className="w-64 text-sm">
             <div className="flex justify-between border-t-2 px-3 py-2 font-bold" style={{ borderColor: CI }}>
               <span>Angebotssumme netto</span>
-              <span>{fmtEur(calc.sales_total)}</span>
+              <span>{fmtEur(summe)}</span>
             </div>
           </div>
         </div>
@@ -315,6 +434,39 @@ export default function OfferPrintPage() {
           </div>
         </div>
       </div>
+
+      {showPick && (
+        <Modal title="Position aus Kalkulation übernehmen" onClose={() => setShowPick(false)} wide>
+          <div className="space-y-3">
+            <TextInput placeholder="Suchen: Titel, Kunde…" value={pickQ} onChange={(e) => setPickQ(e.target.value)} autoFocus />
+            {!pickRows ? (
+              <Spinner />
+            ) : (
+              <div className="max-h-80 overflow-auto divide-y divide-slate-100">
+                {pickRows
+                  .filter((r) => !pickQ || `${r.title} ${r.customer_name} ${r.drawing_no}`.toLowerCase().includes(pickQ.toLowerCase()))
+                  .slice(0, 50)
+                  .map((r) => (
+                    <button
+                      key={r.id}
+                      onClick={() => addAusKalk(r)}
+                      className="w-full text-left px-3 py-2 hover:bg-blue-50 flex justify-between items-center gap-3"
+                    >
+                      <span>
+                        <span className="font-medium text-slate-800">{r.title || "(ohne Titel)"}</span>{" "}
+                        <span className="text-xs text-slate-400">
+                          V{r.version} · {(CALC_TYPE_LABELS as any)[r.calc_type] ?? r.calc_type}
+                          {r.customer_name && ` · ${r.customer_name}`}
+                        </span>
+                      </span>
+                      <span className="text-sm font-semibold whitespace-nowrap">{fmtEur(r.sales_unit)}/Stk</span>
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
