@@ -105,6 +105,24 @@ app.get("/typen/:type", async (c) => {
   return c.json({ error: "Nicht gefunden" }, 404);
 });
 
+// Firmenlogo aus R2 für den Angebots-Briefkopf (Logo-2023.jpg o. ä.)
+app.get("/logo", async (c) => {
+  for (const name of ["Logo-2023", "logo-2023", "Logo_2023", "Logo", "logo"]) {
+    for (const ext of ["jpg", "jpeg", "png", "webp"]) {
+      const obj = await c.env.BILDER.get(`${name}.${ext}`);
+      if (obj) {
+        return new Response(obj.body as ReadableStream, {
+          headers: {
+            "Content-Type": obj.httpMetadata?.contentType ?? (ext === "jpg" ? "image/jpeg" : `image/${ext}`),
+            "Cache-Control": "public, max-age=3600",
+          },
+        });
+      }
+    }
+  }
+  return c.json({ error: "Nicht gefunden" }, 404);
+});
+
 // Auth-Middleware für alles Weitere
 app.use("*", async (c, next) => {
   const token = getCookie(c, COOKIE);

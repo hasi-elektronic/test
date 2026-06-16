@@ -11,4 +11,13 @@
   body {
     background: white !important;
   }
+  /* Hintergrundfarben (blauer CI-Kopf, Zebra-Zeilen) im Druck/PDF erhalten */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
 }
