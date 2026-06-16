@@ -32,15 +32,47 @@ const KONDITIONEN = [
   "Dieses Angebot ist freibleibend und 30 Tage gültig.",
 ];
 
+// Marken-Logo als SVG nachempfunden (MOS-Monogramm + Schriftzug + Slogan),
+// Fallback solange kein echtes Logo im R2-Bucket liegt.
 function LogoFallback() {
+  const dark = "#1B5E9E";
+  const light = "#5B9BD5";
+  const gray = "#6B7280";
   return (
-    <div className="text-right leading-tight">
-      <div className="text-2xl font-bold" style={{ color: CI }}>
+    <svg viewBox="0 0 344 84" className="h-20 w-auto" role="img" aria-label="Manfred Sickinger GmbH & Co.KG">
+      {/* MOS-Monogramm: 2×2 Kacheln */}
+      <rect x="0" y="4" width="36" height="36" rx="4" fill={dark} />
+      <text x="18" y="29" textAnchor="middle" fontSize="24" fontWeight="700" fill="#fff" fontFamily="Arial, sans-serif">
+        M
+      </text>
+      {/* Lüfterrad-Icon */}
+      <rect x="40" y="4" width="36" height="36" rx="4" fill={light} />
+      <g fill="#fff">
+        {[...Array(6)].map((_, i) => (
+          <ellipse key={i} cx="58" cy="14" rx="2.6" ry="7" transform={`rotate(${i * 60} 58 22)`} />
+        ))}
+        <circle cx="58" cy="22" r="3.4" fill={light} stroke="#fff" strokeWidth="1.6" />
+      </g>
+      {/* Gedrücktes Ringteil (das „O") */}
+      <rect x="0" y="44" width="36" height="36" rx="4" fill={light} />
+      <ellipse cx="18" cy="62" rx="13" ry="8" fill="none" stroke="#fff" strokeWidth="2.4" />
+      <ellipse cx="18" cy="62" rx="6" ry="3.6" fill="none" stroke="#fff" strokeWidth="1.6" />
+      <rect x="40" y="44" width="36" height="36" rx="4" fill={dark} />
+      <text x="58" y="69" textAnchor="middle" fontSize="24" fontWeight="700" fill="#fff" fontFamily="Arial, sans-serif">
+        S
+      </text>
+
+      {/* Schriftzug */}
+      <text x="90" y="35" fontSize="27" fontWeight="700" fill={gray} fontFamily="Arial, sans-serif">
         Manfred Sickinger
-      </div>
-      <div className="text-sm font-semibold text-slate-500">GmbH &amp; Co.KG</div>
-      <div className="text-[10px] font-medium tracking-wide text-slate-400 mt-1">{FIRMA.slogan}</div>
-    </div>
+      </text>
+      <text x="91" y="55" fontSize="15" fontWeight="600" fill="#9CA3AF" fontFamily="Arial, sans-serif">
+        GmbH &amp; Co.KG
+      </text>
+      <text x="92" y="72" fontSize="7.6" fontWeight="600" fill={dark} letterSpacing="0.4" fontFamily="Arial, sans-serif">
+        DRÜCKTEILE · APPARATEBAU · VENTILATOREN · LASERSCHNEIDEN
+      </text>
+    </svg>
   );
 }
 
