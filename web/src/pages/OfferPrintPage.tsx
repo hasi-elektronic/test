@@ -87,49 +87,101 @@ export default function OfferPrintPage() {
   const pdfName = () =>
     `Angebot-${angebotNr}${empfaenger ? "-" + empfaenger.replace(/[^\w-]+/g, "_") : ""}.pdf`;
 
-  // Angebot als PDF erzeugen (html-to-image + jsPDF, lazy geladen) und herunterladen
+  // UTF-8-sicheres Base64
+  const b64 = (str: string) => btoa(String.fromCharCode(...new TextEncoder().encode(str)));
+  const downloadBlob = (blob: Blob, name: string) => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  // Angebot als PDF erzeugen (html-to-image + jsPDF, lazy geladen)
+  const makePdf = async () => {
+    if (!pageRef.current) return null;
+    const [{ toPng }, { jsPDF }] = await Promise.all([import("html-to-image"), import("jspdf")]);
+    const dataUrl = await toPng(pageRef.current, {
+      pixelRatio: 2,
+      backgroundColor: "#ffffff",
+      width: PAGE_W,
+      height: PAGE_H,
+    });
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    pdf.addImage(dataUrl, "PNG", 0, 0, 210, 297);
+    return pdf;
+  };
+
   const downloadPdf = async () => {
-    if (!pageRef.current) return;
     setPdfBusy(true);
     setHint("");
     try {
-      const [{ toPng }, { jsPDF }] = await Promise.all([import("html-to-image"), import("jspdf")]);
-      const dataUrl = await toPng(pageRef.current, {
-        pixelRatio: 2,
-        backgroundColor: "#ffffff",
-        width: PAGE_W,
-        height: PAGE_H,
-      });
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      pdf.addImage(dataUrl, "PNG", 0, 0, 210, 297);
-      pdf.save(pdfName());
+      const pdf = await makePdf();
+      pdf?.save(pdfName());
     } finally {
       setPdfBusy(false);
     }
   };
 
-  // PDF herunterladen und anschließend das Standard-Mailprogramm (Outlook) mit Vorlage öffnen
+  // Outlook-E-Mail (.eml) mit PDF im Anhang erzeugen.
+  // X-Unsent: 1 → Outlook öffnet beim Doppelklick eine neue, sendebereite E-Mail.
   const sendEmail = async () => {
-    await downloadPdf();
-    const kunde = customers.find((c) => c.name === empfaenger && c.email);
-    const betreff = `Angebot Nr. ${angebotNr}${empfaenger ? ` – ${empfaenger}` : ""}`;
-    const text = [
-      "Sehr geehrte Damen und Herren,",
-      "",
-      "vielen Dank für Ihre Anfrage und Ihr Interesse an unseren Produkten.",
-      "",
-      `anbei erhalten Sie unser Angebot Nr. ${angebotNr} als PDF. Die Angebotssumme beträgt ${fmtEur(summe)} netto (zzgl. der gesetzlichen MwSt., ab Werk, zzgl. Verpackung).`,
-      "",
-      "Über Ihren Auftrag würden wir uns sehr freuen. Für Rückfragen stehen wir Ihnen jederzeit gerne zur Verfügung.",
-      "",
-      "Mit freundlichen Grüßen",
-      FIRMA.name,
-      `${FIRMA.strasse} · ${FIRMA.ort}`,
-      `Tel: ${FIRMA.tel}`,
-      `${FIRMA.email} · ${FIRMA.web}`,
-    ].join("\r\n");
-    window.location.href = `mailto:${encodeURIComponent(kunde?.email ?? "")}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(text)}`;
-    setHint(`„${pdfName()}" wurde heruntergeladen – bitte in Outlook anhängen.`);
+    setPdfBusy(true);
+    setHint("");
+    try {
+      const pdf = await makePdf();
+      if (!pdf) return;
+      const pdfB64 = (pdf.output("datauristring") as string).split("base64,")[1];
+      const kunde = customers.find((c) => c.name === empfaenger && c.email);
+      const betreff = `Angebot Nr. ${angebotNr}${empfaenger ? ` – ${empfaenger}` : ""}`;
+      const body = [
+        "Sehr geehrte Damen und Herren,",
+        "",
+        "vielen Dank für Ihre Anfrage und Ihr Interesse an unseren Produkten.",
+        "",
+        `anbei erhalten Sie unser Angebot Nr. ${angebotNr} als PDF. Die Angebotssumme beträgt ${fmtEur(summe)} netto (zzgl. der gesetzlichen MwSt., ab Werk, zzgl. Verpackung).`,
+        "",
+        "Über Ihren Auftrag würden wir uns sehr freuen. Für Rückfragen stehen wir Ihnen jederzeit gerne zur Verfügung.",
+        "",
+        "Mit freundlichen Grüßen",
+        FIRMA.name,
+        `${FIRMA.strasse} · ${FIRMA.ort}`,
+        `Tel: ${FIRMA.tel}`,
+        `${FIRMA.email} · ${FIRMA.web}`,
+      ].join("\r\n");
+
+      const datei = pdfName();
+      const boundary = "SICK_" + Math.random().toString(36).slice(2);
+      const wrap = (s: string) => s.replace(/.{1,76}/g, "$&\r\n").trimEnd();
+      const header = [
+        `Date: ${new Date().toUTCString()}`,
+        kunde?.email ? `To: ${kunde.email}` : "",
+        `Subject: =?utf-8?B?${b64(betreff)}?=`,
+        "X-Unsent: 1",
+        "MIME-Version: 1.0",
+        `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      ].filter(Boolean);
+      const eml =
+        header.join("\r\n") +
+        "\r\n\r\n" +
+        `--${boundary}\r\n` +
+        "Content-Type: text/plain; charset=utf-8\r\n" +
+        "Content-Transfer-Encoding: base64\r\n\r\n" +
+        wrap(b64(body)) +
+        "\r\n\r\n" +
+        `--${boundary}\r\n` +
+        `Content-Type: application/pdf; name="${datei}"\r\n` +
+        "Content-Transfer-Encoding: base64\r\n" +
+        `Content-Disposition: attachment; filename="${datei}"\r\n\r\n` +
+        wrap(pdfB64) +
+        "\r\n\r\n" +
+        `--${boundary}--\r\n`;
+
+      downloadBlob(new Blob([eml], { type: "message/rfc822" }), datei.replace(/\.pdf$/, ".eml"));
+      setHint("E-Mail mit PDF im Anhang erstellt – Datei doppelklicken, Outlook öffnet sie sendebereit.");
+    } finally {
+      setPdfBusy(false);
+    }
   };
 
   return (
@@ -145,7 +197,7 @@ export default function OfferPrintPage() {
           </Button>
           <Button variant="secondary" onClick={() => window.print()} disabled={items.length === 0}>🖨 Drucken</Button>
           <Button onClick={sendEmail} disabled={items.length === 0 || pdfBusy}>
-            {pdfBusy ? "Erzeuge PDF…" : "📧 Per E-Mail senden"}
+            {pdfBusy ? "Erzeuge E-Mail…" : "📧 Per E-Mail senden"}
           </Button>
         </div>
       </div>
@@ -155,7 +207,7 @@ export default function OfferPrintPage() {
           {hint ? (
             <span className="text-green-600">✓ {hint}</span>
           ) : (
-            <span className="text-slate-400">„📧 Per E-Mail senden" lädt das Angebot als PDF herunter und öffnet Outlook – PDF dort anhängen.</span>
+            <span className="text-slate-400">„📧 Per E-Mail senden" erstellt eine Outlook-E-Mail mit dem Angebot-PDF im Anhang (Datei doppelklicken).</span>
           )}
         </div>
       )}
