@@ -81,6 +81,34 @@ export default function OfferPrintPage() {
     }
   };
 
+  // Standard-E-Mail-Programm (z. B. Outlook) mit vorausgefülltem Angebot öffnen
+  const sendEmail = () => {
+    const kunde = customers.find((c) => c.name === empfaenger && c.email);
+    const betreff = `Angebot Nr. ${angebotNr}${empfaenger ? ` – ${empfaenger}` : ""}`;
+    const zeilen = items.map(
+      (p, i) =>
+        `${i + 1}. ${p.bezeichnung}${p.spec ? ` (${p.spec})` : ""} – ${p.menge} Stück à ${fmtEur(p.einzel)} = ${fmtEur((p.menge || 0) * (p.einzel || 0))}`
+    );
+    const text = [
+      "Sehr geehrte Damen und Herren,",
+      "",
+      `anbei erhalten Sie unser Angebot Nr. ${angebotNr}:`,
+      "",
+      ...zeilen,
+      "",
+      `Angebotssumme netto: ${fmtEur(summe)}`,
+      "Alle Preise zzgl. der gesetzlichen MwSt., ab Werk, zzgl. Verpackung.",
+      "",
+      "Über Ihren Auftrag würden wir uns sehr freuen. Für Rückfragen stehen wir Ihnen gerne zur Verfügung.",
+      "",
+      "Mit freundlichen Grüßen",
+      FIRMA.name,
+      `${FIRMA.strasse} · ${FIRMA.ort}`,
+      `Tel: ${FIRMA.tel} · ${FIRMA.email}`,
+    ].join("\r\n");
+    window.location.href = `mailto:${encodeURIComponent(kunde?.email ?? "")}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(text)}`;
+  };
+
   return (
     <div className="mx-auto" style={{ maxWidth: PAGE_W }}>
       <div className="no-print flex justify-between items-center mb-4">
@@ -89,9 +117,16 @@ export default function OfferPrintPage() {
           {items.length > 0 && (
             <Button variant="secondary" onClick={clearAll} className="!text-red-600 hover:!bg-red-50">Korb leeren</Button>
           )}
+          <Button variant="secondary" onClick={sendEmail} disabled={items.length === 0}>📧 Per E-Mail senden</Button>
           <Button onClick={() => window.print()} disabled={items.length === 0}>🖨 Drucken / Als PDF speichern</Button>
         </div>
       </div>
+
+      {items.length > 0 && (
+        <div className="no-print text-xs text-slate-400 -mt-2 mb-4 text-right">
+          Tipp: Erst „🖨 Als PDF speichern", dann „📧 Per E-Mail senden" – das Angebot (Text + Summe) ist bereits in der E-Mail; PDF in Outlook anhängen.
+        </div>
+      )}
 
       {items.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400">
