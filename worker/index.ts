@@ -646,6 +646,66 @@ app.put("/settings", requireAdmin, async (c) => {
   return c.json({ ok: true });
 });
 
+// ---------- Angebotskorb (Einkaufswagen, pro Benutzer) ----------
+
+app.get("/cart", async (c) => {
+  const { results } = await c.env.DB.prepare(
+    "SELECT * FROM cart_items WHERE user_id = ? ORDER BY id"
+  )
+    .bind(c.get("user").id)
+    .all();
+  return c.json(results);
+});
+
+app.post("/cart", async (c) => {
+  const b = await c.req.json();
+  const res = await c.env.DB.prepare(
+    `INSERT INTO cart_items (user_id, calc_id, bezeichnung, spec, menge, einzel, customer_name, drawing_no)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  )
+    .bind(
+      c.get("user").id,
+      b.calc_id ?? null,
+      (b.bezeichnung ?? "") + "",
+      (b.spec ?? "") + "",
+      Number(b.menge) || 1,
+      Number(b.einzel) || 0,
+      (b.customer_name ?? "") + "",
+      (b.drawing_no ?? "") + ""
+    )
+    .run();
+  return c.json({ id: res.meta.last_row_id });
+});
+
+app.put("/cart/:id", async (c) => {
+  const b = await c.req.json();
+  await c.env.DB.prepare(
+    "UPDATE cart_items SET bezeichnung = ?, spec = ?, menge = ?, einzel = ? WHERE id = ? AND user_id = ?"
+  )
+    .bind(
+      (b.bezeichnung ?? "") + "",
+      (b.spec ?? "") + "",
+      Number(b.menge) || 0,
+      Number(b.einzel) || 0,
+      Number(c.req.param("id")),
+      c.get("user").id
+    )
+    .run();
+  return c.json({ ok: true });
+});
+
+app.delete("/cart/:id", async (c) => {
+  await c.env.DB.prepare("DELETE FROM cart_items WHERE id = ? AND user_id = ?")
+    .bind(Number(c.req.param("id")), c.get("user").id)
+    .run();
+  return c.json({ ok: true });
+});
+
+app.delete("/cart", async (c) => {
+  await c.env.DB.prepare("DELETE FROM cart_items WHERE user_id = ?").bind(c.get("user").id).run();
+  return c.json({ ok: true });
+});
+
 // Admin-Hilfe: Dateinamen im R2-Bucket einsehen (z. B. um den Logo-Dateinamen zu prüfen)
 app.get("/bucket-keys", requireAdmin, async (c) => {
   const list = await c.env.BILDER.list();

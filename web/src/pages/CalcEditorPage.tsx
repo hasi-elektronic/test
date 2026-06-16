@@ -21,6 +21,7 @@ import type {
 import { CALC_TYPE_LABELS, STATUS_LABELS } from "../../../shared/types";
 import { fmtDate, fmtEur, fmtNum } from "../format";
 import { Button, Card, Field, Modal, NumInput, Select, Spinner, TextInput } from "../components/ui";
+import { produktSpecOf, cartChanged } from "../offer";
 
 function SectionSum({ label, value }: { label: string; value: number }) {
   return (
@@ -370,6 +371,22 @@ export default function CalcEditorPage() {
     }
   };
 
+  // Diese Kalkulation als Position in den Angebotskorb legen
+  const addToCart = async () => {
+    await save();
+    await api.post("/cart", {
+      calc_id: calc.id,
+      bezeichnung: calc.title || CALC_TYPE_LABELS[calc.calc_type],
+      spec: produktSpecOf(calc),
+      menge: calc.data.batchQty || 1,
+      einzel: calc.sales_unit,
+      customer_name: calc.customer_name,
+      drawing_no: calc.drawing_no,
+    });
+    cartChanged();
+    navigate("/angebot");
+  };
+
   const isSk = data.type === "schallkabine" || data.type === "ventilator" || data.type === "baugruppe";
 
   // Preis-Warnungen für den Sachbearbeiter: fehlende, veraltete oder stark abweichende Materialpreise
@@ -531,12 +548,7 @@ export default function CalcEditorPage() {
             🗑 Löschen
           </Button>
           <Button variant="secondary" onClick={copyVersion}>⧉ Neue Version</Button>
-          <Link
-            to={`/kalkulationen/${calc.id}/angebot`}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-300"
-          >
-            📄 Angebot
-          </Link>
+          <Button variant="secondary" onClick={addToCart}>🛒 Zum Angebot hinzufügen</Button>
           <Button onClick={save} disabled={saving}>{saving ? "Speichern…" : "💾 Speichern"}</Button>
         </div>
       </div>

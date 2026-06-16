@@ -250,6 +250,17 @@ export interface Sachbearbeiter {
   kuerzel: string;
 }
 
+export interface CartItem {
+  id: number;
+  calc_id: number | null;
+  bezeichnung: string;
+  spec: string;
+  menge: number;
+  einzel: number;
+  customer_name: string;
+  drawing_no: string;
+}
+
 export interface Supplier {
   id: number;
   name: string;

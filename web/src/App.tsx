@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes, NavLink, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "./api";
 import { Button, Field, Modal, Spinner, TextInput } from "./components/ui";
 import LoginPage from "./pages/LoginPage";
@@ -56,6 +56,15 @@ function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+
+  // Angebotskorb-Zähler (aktualisiert sich nach „Zum Angebot hinzufügen")
+  useEffect(() => {
+    const refresh = () => api.get<any[]>("/cart").then((r) => setCartCount(r.length)).catch(() => {});
+    refresh();
+    window.addEventListener("cart-changed", refresh);
+    return () => window.removeEventListener("cart-changed", refresh);
+  }, []);
 
   const navItem = "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition";
   const cls = ({ isActive }: { isActive: boolean }) =>
@@ -71,6 +80,12 @@ function Layout({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 p-3 space-y-1">
           <NavLink to="/" end className={cls}>📊 Dashboard</NavLink>
           <NavLink to="/kalkulationen" className={cls}>🧮 Kalkulationen</NavLink>
+          <NavLink to="/angebot" className={cls}>
+            <span className="flex-1">🛒 Angebot</span>
+            {cartCount > 0 && (
+              <span className="bg-blue-500 text-white text-xs font-bold rounded-full px-2 py-0.5">{cartCount}</span>
+            )}
+          </NavLink>
           <NavLink to="/stammdaten" className={cls}>🗂️ Stammdaten</NavLink>
           {user?.role === "admin" && <NavLink to="/benutzer" className={cls}>👥 Benutzer</NavLink>}
           {user?.role === "admin" && <NavLink to="/einstellungen" className={cls}>⚙️ Einstellungen</NavLink>}
@@ -117,7 +132,7 @@ export default function App() {
         <Route path="/kalkulationen" element={<Protected><CalcListPage /></Protected>} />
         <Route path="/kalkulationen/neu" element={<Protected><NewCalcPage /></Protected>} />
         <Route path="/kalkulationen/:id" element={<Protected><CalcEditorPage /></Protected>} />
-        <Route path="/kalkulationen/:id/angebot" element={<Protected><OfferPrintPage /></Protected>} />
+        <Route path="/angebot" element={<Protected><OfferPrintPage /></Protected>} />
         <Route path="/stammdaten" element={<Protected><StammdatenPage /></Protected>} />
         <Route path="/benutzer" element={<Protected><UsersPage /></Protected>} />
         <Route path="/einstellungen" element={<Protected><SettingsPage /></Protected>} />
