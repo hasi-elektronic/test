@@ -6,10 +6,49 @@ import { Button, Spinner } from "../components/ui";
 import type { CalcRow } from "../../../shared/types";
 import { CALC_TYPE_LABELS } from "../../../shared/types";
 
+// CI-Farbe Manfred Sickinger
+const CI = "#1B5E9E";
+const CI_LIGHT = "#EEF4FB";
+
+// Firmenstammdaten für Briefkopf & Fußzeile
+const FIRMA = {
+  name: "Manfred Sickinger GmbH & Co.KG",
+  strasse: "Mönchswiesen 12",
+  ort: "71735 Eberdingen",
+  tel: "+49 (0) 7042 7098",
+  email: "info@apparatebau-sickinger.de",
+  web: "www.apparatebau-sickinger.de",
+  ust: "USt-IdNr: DE145024838",
+  iban: "IBAN: DE71 6045 0050 0030 2488 01",
+  reg: "Stuttgart HRA 720254",
+  slogan: "DRÜCKTEILE · APPARATEBAU · VENTILATOREN · LASERSCHNEIDEN",
+};
+
+const KONDITIONEN = [
+  "Alle Preise verstehen sich netto zzgl. der gesetzlichen Mehrwertsteuer.",
+  "Lieferung ab Werk, zzgl. Verpackung.",
+  "Lieferzeit nach Vereinbarung – abhängig von Materialverfügbarkeit.",
+  "Zahlungsbedingungen: 30 Tage netto ohne Abzug.",
+  "Dieses Angebot ist freibleibend und 30 Tage gültig.",
+];
+
+function LogoFallback() {
+  return (
+    <div className="text-right leading-tight">
+      <div className="text-2xl font-bold" style={{ color: CI }}>
+        Manfred Sickinger
+      </div>
+      <div className="text-sm font-semibold text-slate-500">GmbH &amp; Co.KG</div>
+      <div className="text-[10px] font-medium tracking-wide text-slate-400 mt-1">{FIRMA.slogan}</div>
+    </div>
+  );
+}
+
 export default function OfferPrintPage() {
   const { id } = useParams();
   const [calc, setCalc] = useState<CalcRow | null>(null);
   const [settings, setSettings] = useState<Record<string, string>>({});
+  const [logoOk, setLogoOk] = useState(true);
 
   useEffect(() => {
     Promise.all([api.get<CalcRow>(`/calculations/${id}`), api.get<Record<string, string>>("/settings")]).then(
@@ -22,10 +61,30 @@ export default function OfferPrintPage() {
 
   if (!calc) return <Spinner />;
 
-  const defaultText = (settings.offer_template || "")
-    .replace("{titel}", calc.title || CALC_TYPE_LABELS[calc.calc_type])
-    .replace("{preis}", fmtEur(calc.sales_unit));
-  const text = calc.offer_text?.trim() ? calc.offer_text : defaultText;
+  const titel = calc.title || CALC_TYPE_LABELS[calc.calc_type];
+  const jahr = (calc.calc_date || "").slice(0, 4) || String(new Date().getFullYear());
+  const angebotNr = `${jahr}-${String(calc.id).padStart(4, "0")}`;
+  const qty = calc.data.batchQty || 1;
+
+  // Optionaler Angebotstext des Kalkulators (Vorlage mit Platzhaltern)
+  const freitext = (calc.offer_text?.trim()
+    ? calc.offer_text
+    : (settings.offer_template || "")
+        .replace("{titel}", titel)
+        .replace("{preis}", fmtEur(calc.sales_unit))
+  ).trim();
+
+  // Positionstabelle (eine Position je Kalkulation)
+  const positionen = [
+    {
+      nr: 1,
+      bezeichnung: titel,
+      detail: calc.drawing_no ? `Zeichnung ${calc.drawing_no}` : "",
+      menge: `${qty} Stück`,
+      einzel: calc.sales_unit,
+      gesamt: calc.sales_total,
+    },
+  ];
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -36,64 +95,165 @@ export default function OfferPrintPage() {
         <Button onClick={() => window.print()}>🖨 Drucken / Als PDF speichern</Button>
       </div>
 
-      <div className="bg-white shadow-sm border border-slate-200 rounded-xl p-10 print:shadow-none print:border-0 print:rounded-none print:p-0">
-        {/* Briefkopf */}
-        <div className="flex justify-between items-start border-b-2 border-slate-800 pb-4 mb-8">
-          <div>
-            <div className="text-2xl font-bold text-slate-900">{settings.company_name || "Sickinger GmbH"}</div>
-            {settings.company_address && (
-              <div className="text-sm text-slate-500 whitespace-pre-line">{settings.company_address}</div>
+      <div className="bg-white shadow-sm border border-slate-200 rounded-xl p-10 print:shadow-none print:border-0 print:rounded-none print:p-0 flex flex-col print:min-h-[247mm]">
+        {/* Briefkopf: Logo oben rechts */}
+        <div className="flex justify-between items-start mb-8">
+          <div className="text-[11px] text-slate-500 leading-snug pt-2">
+            <div className="font-semibold text-slate-700">{FIRMA.name}</div>
+            <div>{FIRMA.strasse}</div>
+            <div>{FIRMA.ort}</div>
+          </div>
+          <div className="shrink-0">
+            {logoOk ? (
+              <img
+                src="/api/logo"
+                alt="Manfred Sickinger GmbH & Co.KG"
+                onError={() => setLogoOk(false)}
+                className="h-20 w-auto object-contain"
+              />
+            ) : (
+              <LogoFallback />
             )}
           </div>
-          <div className="text-right text-sm text-slate-500">
-            {settings.company_contact && <div className="whitespace-pre-line">{settings.company_contact}</div>}
-            <div className="mt-1">{fmtDate(calc.calc_date)}</div>
+        </div>
+
+        {/* Empfänger + Angebotsdaten */}
+        <div className="flex justify-between items-start gap-8 mb-8">
+          <div className="text-sm text-slate-800">
+            <div className="text-[10px] uppercase tracking-wide text-slate-400 mb-1">An</div>
+            <div className="font-semibold">{calc.customer_name || "—"}</div>
           </div>
+          <table className="text-sm text-slate-700">
+            <tbody>
+              <tr>
+                <td className="pr-4 text-slate-400">Angebot-Nr.</td>
+                <td className="font-medium text-right">{angebotNr}</td>
+              </tr>
+              <tr>
+                <td className="pr-4 text-slate-400">Datum</td>
+                <td className="font-medium text-right">{fmtDate(calc.calc_date)}</td>
+              </tr>
+              {calc.inquiry_no && (
+                <tr>
+                  <td className="pr-4 text-slate-400">Ihre Anfrage</td>
+                  <td className="font-medium text-right">{calc.inquiry_no}</td>
+                </tr>
+              )}
+              {calc.drawing_no && (
+                <tr>
+                  <td className="pr-4 text-slate-400">Zeichnung</td>
+                  <td className="font-medium text-right">{calc.drawing_no}</td>
+                </tr>
+              )}
+              {calc.sachbearbeiter && (
+                <tr>
+                  <td className="pr-4 text-slate-400">Sachbearbeiter</td>
+                  <td className="font-medium text-right">{calc.sachbearbeiter}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {/* Betreff */}
-        <h1 className="text-lg font-bold text-slate-900 mb-1">
-          Angebot – {calc.title || CALC_TYPE_LABELS[calc.calc_type]}
-        </h1>
-        <div className="text-sm text-slate-500 mb-6 space-x-3">
-          {calc.customer_name && <span>Kunde: {calc.customer_name}</span>}
-          {calc.inquiry_no && <span>Ihre Anfrage: {calc.inquiry_no}</span>}
-          {calc.drawing_no && <span>Zeichnung: {calc.drawing_no}</span>}
+        {/* Blaue CI-Überschrift */}
+        <div
+          className="text-white font-bold text-base px-4 py-2 rounded-sm mb-5"
+          style={{ backgroundColor: CI }}
+        >
+          Angebot Nr. {angebotNr} – {titel}
         </div>
 
-        {/* Angebotstext */}
-        <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed mb-8">{text}</div>
+        {/* Anrede + Einleitung */}
+        <div className="text-sm text-slate-700 leading-relaxed mb-4">
+          <p className="mb-2">Sehr geehrte Damen und Herren,</p>
+          <p>
+            vielen Dank für Ihre Anfrage. Gerne unterbreiten wir Ihnen hierfür das folgende Angebot:
+          </p>
+        </div>
 
-        {/* Preistabelle */}
-        <table className="w-full text-sm border-t border-b border-slate-300 mb-8">
+        {freitext && (
+          <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed mb-5">{freitext}</div>
+        )}
+
+        {/* Preistabelle mit blauem Kopf und Zebra-Zeilen */}
+        <table className="w-full text-sm mb-2">
           <thead>
-            <tr className="text-left text-xs uppercase text-slate-400">
-              <th className="py-2">Position</th>
-              <th className="py-2 text-right">Menge</th>
-              <th className="py-2 text-right">Einzelpreis</th>
-              <th className="py-2 text-right">Gesamtpreis</th>
+            <tr className="text-white" style={{ backgroundColor: CI }}>
+              <th className="text-left font-semibold px-3 py-2 w-10">Pos.</th>
+              <th className="text-left font-semibold px-3 py-2">Bezeichnung</th>
+              <th className="text-right font-semibold px-3 py-2">Menge</th>
+              <th className="text-right font-semibold px-3 py-2">Einzelpreis</th>
+              <th className="text-right font-semibold px-3 py-2">Gesamtpreis</th>
             </tr>
           </thead>
           <tbody>
-            <tr className="border-t border-slate-200">
-              <td className="py-3 font-medium text-slate-800">
-                {calc.title || CALC_TYPE_LABELS[calc.calc_type]}
-                {calc.drawing_no && <span className="text-slate-400 font-normal"> · Zeichnung {calc.drawing_no}</span>}
-              </td>
-              <td className="py-3 text-right">{calc.data.batchQty || 1} Stück</td>
-              <td className="py-3 text-right">{fmtEur(calc.sales_unit)}</td>
-              <td className="py-3 text-right font-bold">{fmtEur(calc.sales_total)}</td>
-            </tr>
+            {positionen.map((p, i) => (
+              <tr key={p.nr} style={{ backgroundColor: i % 2 === 1 ? CI_LIGHT : "white" }}>
+                <td className="px-3 py-2.5 align-top text-slate-500">{p.nr}</td>
+                <td className="px-3 py-2.5 align-top">
+                  <div className="font-medium text-slate-800">{p.bezeichnung}</div>
+                  {p.detail && <div className="text-xs text-slate-400">{p.detail}</div>}
+                </td>
+                <td className="px-3 py-2.5 align-top text-right whitespace-nowrap">{p.menge}</td>
+                <td className="px-3 py-2.5 align-top text-right whitespace-nowrap">{fmtEur(p.einzel)}</td>
+                <td className="px-3 py-2.5 align-top text-right font-medium whitespace-nowrap">{fmtEur(p.gesamt)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
 
-        <p className="text-sm text-slate-600 mb-6">
-          Alle Preise zzgl. gesetzlicher Mehrwertsteuer, zzgl. Verpackung und ab Werk.
-        </p>
+        {/* Angebotssumme */}
+        <div className="flex justify-end mb-6">
+          <div className="w-64 text-sm">
+            <div className="flex justify-between border-t-2 px-3 py-2 font-bold" style={{ borderColor: CI }}>
+              <span>Angebotssumme netto</span>
+              <span>{fmtEur(calc.sales_total)}</span>
+            </div>
+          </div>
+        </div>
 
-        {settings.offer_footer && (
-          <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{settings.offer_footer}</div>
-        )}
+        {/* Konditionen */}
+        <div className="mb-6">
+          <div className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: CI }}>
+            Konditionen
+          </div>
+          <ul className="text-sm text-slate-700 space-y-1">
+            {KONDITIONEN.map((k, i) => (
+              <li key={i} className="flex gap-2">
+                <span style={{ color: CI }}>•</span>
+                <span>{k}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Schlusswort */}
+        <div className="text-sm text-slate-700 leading-relaxed mb-2">
+          <p className="mb-3">
+            Wir würden uns freuen, Ihren Auftrag zu erhalten, und stehen für Rückfragen jederzeit gerne zur
+            Verfügung.
+          </p>
+          <p>Mit freundlichen Grüßen</p>
+          <p className="font-semibold text-slate-800 mt-1">{FIRMA.name}</p>
+        </div>
+
+        {/* Zentrierte 3-zeilige Fußzeile am Seitenende */}
+        <div className="mt-auto pt-6">
+          <div
+            className="border-t-2 pt-3 text-center text-[10px] leading-relaxed text-slate-500"
+            style={{ borderColor: CI }}
+          >
+            <div className="font-semibold" style={{ color: CI }}>
+              {FIRMA.name} · {FIRMA.strasse} · {FIRMA.ort}
+            </div>
+            <div>
+              Tel: {FIRMA.tel} · {FIRMA.email} · {FIRMA.web}
+            </div>
+            <div>
+              {FIRMA.ust} · {FIRMA.iban} · {FIRMA.reg}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
