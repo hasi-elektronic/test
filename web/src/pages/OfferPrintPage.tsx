@@ -27,9 +27,12 @@ export default function OfferPrintPage() {
   const [freitext, setFreitext] = useState("");
 
   // Auto-fit auf eine A4-Seite
+  const pageRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [hint, setHint] = useState("");
 
   const load = () => {
     Promise.all([api.get<CartItem[]>("/cart"), api.get<Customer[]>("/customers")]).then(([c, cu]) => {
@@ -81,32 +84,52 @@ export default function OfferPrintPage() {
     }
   };
 
-  // Standard-E-Mail-Programm (z. B. Outlook) mit vorausgefülltem Angebot öffnen
-  const sendEmail = () => {
+  const pdfName = () =>
+    `Angebot-${angebotNr}${empfaenger ? "-" + empfaenger.replace(/[^\w-]+/g, "_") : ""}.pdf`;
+
+  // Angebot als PDF erzeugen (html-to-image + jsPDF, lazy geladen) und herunterladen
+  const downloadPdf = async () => {
+    if (!pageRef.current) return;
+    setPdfBusy(true);
+    setHint("");
+    try {
+      const [{ toPng }, { jsPDF }] = await Promise.all([import("html-to-image"), import("jspdf")]);
+      const dataUrl = await toPng(pageRef.current, {
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        width: PAGE_W,
+        height: PAGE_H,
+      });
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      pdf.addImage(dataUrl, "PNG", 0, 0, 210, 297);
+      pdf.save(pdfName());
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
+  // PDF herunterladen und anschließend das Standard-Mailprogramm (Outlook) mit Vorlage öffnen
+  const sendEmail = async () => {
+    await downloadPdf();
     const kunde = customers.find((c) => c.name === empfaenger && c.email);
     const betreff = `Angebot Nr. ${angebotNr}${empfaenger ? ` – ${empfaenger}` : ""}`;
-    const zeilen = items.map(
-      (p, i) =>
-        `${i + 1}. ${p.bezeichnung}${p.spec ? ` (${p.spec})` : ""} – ${p.menge} Stück à ${fmtEur(p.einzel)} = ${fmtEur((p.menge || 0) * (p.einzel || 0))}`
-    );
     const text = [
       "Sehr geehrte Damen und Herren,",
       "",
-      `anbei erhalten Sie unser Angebot Nr. ${angebotNr}:`,
+      "vielen Dank für Ihre Anfrage und Ihr Interesse an unseren Produkten.",
       "",
-      ...zeilen,
+      `anbei erhalten Sie unser Angebot Nr. ${angebotNr} als PDF. Die Angebotssumme beträgt ${fmtEur(summe)} netto (zzgl. der gesetzlichen MwSt., ab Werk, zzgl. Verpackung).`,
       "",
-      `Angebotssumme netto: ${fmtEur(summe)}`,
-      "Alle Preise zzgl. der gesetzlichen MwSt., ab Werk, zzgl. Verpackung.",
-      "",
-      "Über Ihren Auftrag würden wir uns sehr freuen. Für Rückfragen stehen wir Ihnen gerne zur Verfügung.",
+      "Über Ihren Auftrag würden wir uns sehr freuen. Für Rückfragen stehen wir Ihnen jederzeit gerne zur Verfügung.",
       "",
       "Mit freundlichen Grüßen",
       FIRMA.name,
       `${FIRMA.strasse} · ${FIRMA.ort}`,
-      `Tel: ${FIRMA.tel} · ${FIRMA.email}`,
+      `Tel: ${FIRMA.tel}`,
+      `${FIRMA.email} · ${FIRMA.web}`,
     ].join("\r\n");
     window.location.href = `mailto:${encodeURIComponent(kunde?.email ?? "")}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(text)}`;
+    setHint(`„${pdfName()}" wurde heruntergeladen – bitte in Outlook anhängen.`);
   };
 
   return (
@@ -117,14 +140,23 @@ export default function OfferPrintPage() {
           {items.length > 0 && (
             <Button variant="secondary" onClick={clearAll} className="!text-red-600 hover:!bg-red-50">Korb leeren</Button>
           )}
-          <Button variant="secondary" onClick={sendEmail} disabled={items.length === 0}>📧 Per E-Mail senden</Button>
-          <Button onClick={() => window.print()} disabled={items.length === 0}>🖨 Drucken / Als PDF speichern</Button>
+          <Button variant="secondary" onClick={downloadPdf} disabled={items.length === 0 || pdfBusy}>
+            {pdfBusy ? "PDF…" : "⬇ PDF"}
+          </Button>
+          <Button variant="secondary" onClick={() => window.print()} disabled={items.length === 0}>🖨 Drucken</Button>
+          <Button onClick={sendEmail} disabled={items.length === 0 || pdfBusy}>
+            {pdfBusy ? "Erzeuge PDF…" : "📧 Per E-Mail senden"}
+          </Button>
         </div>
       </div>
 
       {items.length > 0 && (
-        <div className="no-print text-xs text-slate-400 -mt-2 mb-4 text-right">
-          Tipp: Erst „🖨 Als PDF speichern", dann „📧 Per E-Mail senden" – das Angebot (Text + Summe) ist bereits in der E-Mail; PDF in Outlook anhängen.
+        <div className="no-print text-xs -mt-2 mb-4 text-right">
+          {hint ? (
+            <span className="text-green-600">✓ {hint}</span>
+          ) : (
+            <span className="text-slate-400">„📧 Per E-Mail senden" lädt das Angebot als PDF herunter und öffnet Outlook – PDF dort anhängen.</span>
+          )}
         </div>
       )}
 
@@ -179,6 +211,7 @@ export default function OfferPrintPage() {
 
           {/* A4-Druckseite mit Auto-Fit auf genau eine Seite */}
           <div
+            ref={pageRef}
             className="angebot-page bg-white shadow-sm mx-auto relative overflow-hidden print:shadow-none"
             style={{ width: PAGE_W, height: PAGE_H }}
           >
