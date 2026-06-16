@@ -105,21 +105,43 @@ app.get("/typen/:type", async (c) => {
   return c.json({ error: "Nicht gefunden" }, 404);
 });
 
-// Firmenlogo aus R2 für den Angebots-Briefkopf (Logo-2023.jpg o. ä.)
+// Firmenlogo aus R2 für den Angebots-Briefkopf.
+// Sucht zuerst bekannte Namen, dann jede Bilddatei mit "logo" im Namen (beliebige Schreibweise).
+function bildContentType(key: string, fallback?: string): string {
+  if (fallback) return fallback;
+  const ext = key.toLowerCase().split(".").pop();
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  if (ext === "svg") return "image/svg+xml";
+  return "image/jpeg";
+}
+
 app.get("/logo", async (c) => {
+  const serve = (key: string, obj: R2ObjectBody) =>
+    new Response(obj.body as ReadableStream, {
+      headers: {
+        "Content-Type": obj.httpMetadata?.contentType ?? bildContentType(key),
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
+
   for (const name of ["Logo-2023", "logo-2023", "Logo_2023", "Logo", "logo"]) {
-    for (const ext of ["jpg", "jpeg", "png", "webp"]) {
+    for (const ext of ["jpg", "jpeg", "png", "webp", "svg"]) {
       const obj = await c.env.BILDER.get(`${name}.${ext}`);
-      if (obj) {
-        return new Response(obj.body as ReadableStream, {
-          headers: {
-            "Content-Type": obj.httpMetadata?.contentType ?? (ext === "jpg" ? "image/jpeg" : `image/${ext}`),
-            "Cache-Control": "public, max-age=3600",
-          },
-        });
-      }
+      if (obj) return serve(`${name}.${ext}`, obj);
     }
   }
+
+  // Fallback: erste Bilddatei mit "logo" im Namen
+  const list = await c.env.BILDER.list();
+  const treffer = list.objects.find(
+    (o) => /logo/i.test(o.key) && /\.(jpe?g|png|webp|svg)$/i.test(o.key)
+  );
+  if (treffer) {
+    const obj = await c.env.BILDER.get(treffer.key);
+    if (obj) return serve(treffer.key, obj);
+  }
+
   return c.json({ error: "Nicht gefunden" }, 404);
 });
 
@@ -622,6 +644,12 @@ app.put("/settings", requireAdmin, async (c) => {
   );
   if (stmts.length) await c.env.DB.batch(stmts);
   return c.json({ ok: true });
+});
+
+// Admin-Hilfe: Dateinamen im R2-Bucket einsehen (z. B. um den Logo-Dateinamen zu prüfen)
+app.get("/bucket-keys", requireAdmin, async (c) => {
+  const list = await c.env.BILDER.list();
+  return c.json(list.objects.map((o) => o.key));
 });
 
 app.notFound((c) => c.json({ error: "Nicht gefunden" }, 404));
