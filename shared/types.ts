@@ -85,6 +85,15 @@ export interface AreaItem {
   value: number; // m²
 }
 
+// Zusätzliche Angebotspositionen (neben der Hauptkalkulation)
+export interface OfferPosition {
+  bezeichnung: string;
+  spec: string;
+  menge: number; // Stückzahl
+  einzel: number; // Einzelpreis netto
+  sourceId?: number; // optionale Quell-Kalkulation
+}
+
 // --- Gesamte Kalkulationsdaten (als JSON in DB) ---
 
 export interface CalcData {
@@ -105,6 +114,7 @@ export interface CalcData {
   skMaterials: SkMaterialItem[];
   skWorks: SkWorkItem[];
   areas: AreaItem[];
+  offerPositions?: OfferPosition[]; // zusätzliche Angebotspositionen (nur fürs Angebot)
 }
 
 export interface CalcResult {
