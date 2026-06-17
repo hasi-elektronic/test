@@ -10,14 +10,21 @@ export const FIRMA = {
   name: "Manfred Sickinger GmbH & Co.KG",
   strasse: "Mönchswiesen 12",
   ort: "71735 Eberdingen",
-  tel: "+49 (0) 7042 7098",
+  tel: "07042 - 7098",
+  fax: "07042 - 7033",
   email: "info@apparatebau-sickinger.de",
-  web: "www.apparatebau-sickinger.de",
-  ust: "USt-IdNr: DE145024838",
-  iban: "IBAN: DE71 6045 0050 0030 2488 01",
-  reg: "Stuttgart HRA 720254",
+  web: "www.Apparatebau-Sickinger.de",
+  gericht: "Erfüllungsort u. Gerichtsstand für beide Teile: Stuttgart",
+  ust: "USt-Id.Nr. DE145002701",
+  bank: "KSK Ludwigsburg",
+  blz: "BLZ 60450050",
+  iban: "DE71 6045 0050 0009 8049 84",
+  bic: "SOLADES1LBG",
+  gf: "Geschäftsführer: Uwe Sickinger · Ralph Sickinger",
   slogan: "DRÜCKTEILE · APPARATEBAU · VENTILATOREN · LASERSCHNEIDEN",
 };
+
+export const MWST = 0.19;
 
 export const KONDITIONEN = [
   "Alle Preise verstehen sich netto zzgl. der gesetzlichen Mehrwertsteuer.",
