@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import { calculate } from "../shared/calc";
+import { calculate, emptyCalcData } from "../shared/calc";
 import type { CalcData } from "../shared/types";
 import { hashPassword, verifyPassword, randomHex } from "./auth";
 
@@ -143,6 +143,91 @@ app.get("/logo", async (c) => {
   }
 
   return c.json({ error: "Nicht gefunden" }, 404);
+});
+
+// ---------- CAD-Import (öffentlich, per Token) ----------
+// Das CAD-Tool sendet eine gezeichnete Form als Kalkulation; legt einen Entwurf an
+// und speichert optional die DXF in R2. Vor der Auth-Middleware, da Cross-Origin ohne Cookie.
+const CAD_ORIGIN = "https://cad-tool.pages.dev";
+const cadCors = {
+  "Access-Control-Allow-Origin": CAD_ORIGIN,
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+app.options("/import/cad", () => new Response(null, { headers: cadCors }));
+
+app.post("/import/cad", async (c) => {
+  const jsonCors = (data: unknown, status = 200) =>
+    new Response(JSON.stringify(data), { status, headers: { ...cadCors, "Content-Type": "application/json" } });
+
+  const body = await c.req.json<any>().catch(() => null);
+  if (!body) return jsonCors({ error: "Ungültige Daten" }, 400);
+
+  const tok = await c.env.DB.prepare("SELECT value FROM settings WHERE key = 'cad_import_token'")
+    .first<{ value: string }>();
+  if (!tok?.value || body.token !== tok.value) return jsonCors({ error: "Ungültiger Token" }, 401);
+
+  const type = ["laufrad", "drueckteile", "baugruppe"].includes(body.calc_type) ? body.calc_type : "drueckteile";
+  const data = emptyCalcData(type);
+  data.batchQty = Number(body.batchQty) || 1;
+  data.materials = (Array.isArray(body.positions) ? body.positions : []).map((p: any) => ({
+    label: (p.label ?? "") + "",
+    material: (p.material ?? "") + "",
+    shape: p.shape === "rund" ? "rund" : "eckig",
+    width: Number(p.width) || 0,
+    height: Number(p.height) || 0,
+    thickness: Number(p.thickness) || 0,
+    qtyPerPiece: Number(p.qty) || 1,
+    pricePerKg: Number(p.pricePerKg) || 0,
+  }));
+  // Sicherstellen, dass im Editor genug leere Materialzeilen sichtbar sind
+  while (data.materials.length < 6) {
+    data.materials.push({ label: "", material: "", shape: "eckig", width: 0, height: 0, thickness: 0, qtyPerPiece: 0, pricePerKg: 0 });
+  }
+
+  const densities = await loadDensities(c.env.DB);
+  const r = calculate(data, densities);
+
+  const res = await c.env.DB.prepare(
+    `INSERT INTO calculations
+     (calc_type, title, status, customer_name, drawing_no, calc_date, data, offer_text,
+      material_sum, prod_sum, ext_sum, ship_sum, manufacturing_cost, profit, sales_total, sales_unit)
+     VALUES (?, ?, 'entwurf', ?, ?, date('now'), ?, '', ?, ?, ?, ?, ?, ?, ?, ?)`
+  )
+    .bind(
+      type,
+      (body.title ?? "") + "",
+      (body.customer_name ?? "") + "",
+      (body.drawing_no ?? "") + "",
+      JSON.stringify(data),
+      r.materialSum,
+      r.prodSum,
+      r.extSum,
+      r.shipSum,
+      r.manufacturingCost,
+      r.profit,
+      r.salesTotal,
+      r.salesPerUnit
+    )
+    .run();
+  const id = res.meta.last_row_id as number;
+
+  // optionale DXF (Base64) in R2 ablegen
+  if (typeof body.dxf === "string" && body.dxf.length > 0) {
+    try {
+      const bin = Uint8Array.from(atob(body.dxf), (ch) => ch.charCodeAt(0));
+      const key = `cad-dxf/${id}.dxf`;
+      await c.env.BILDER.put(key, bin, { httpMetadata: { contentType: "application/dxf" } });
+      data.dxfKey = key;
+      await c.env.DB.prepare("UPDATE calculations SET data = ? WHERE id = ?").bind(JSON.stringify(data), id).run();
+    } catch {
+      /* DXF optional – Fehler ignorieren */
+    }
+  }
+
+  const origin = new URL(c.req.url).origin;
+  return jsonCors({ id, url: `${origin}/kalkulationen/${id}` });
 });
 
 // Auth-Middleware für alles Weitere
@@ -441,6 +526,19 @@ app.get("/calculations/:id", async (c) => {
   if (!row) return c.json({ error: "Nicht gefunden" }, 404);
   row.data = JSON.parse(row.data as string);
   return c.json(row);
+});
+
+// DXF einer importierten Kalkulation herunterladen
+app.get("/calculations/:id/dxf", async (c) => {
+  const id = Number(c.req.param("id"));
+  const obj = await c.env.BILDER.get(`cad-dxf/${id}.dxf`);
+  if (!obj) return c.json({ error: "Keine DXF vorhanden" }, 404);
+  return new Response(obj.body as ReadableStream, {
+    headers: {
+      "Content-Type": "application/dxf",
+      "Content-Disposition": `attachment; filename="kalkulation-${id}.dxf"`,
+    },
+  });
 });
 
 type CalcPayload = {

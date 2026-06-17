@@ -115,6 +115,7 @@ export interface CalcData {
   skWorks: SkWorkItem[];
   areas: AreaItem[];
   offerPositions?: OfferPosition[]; // zusätzliche Angebotspositionen (nur fürs Angebot)
+  dxfKey?: string; // R2-Schlüssel der aus dem CAD-Tool importierten DXF
 }
 
 export interface CalcResult {

@@ -58,6 +58,24 @@ export default function SettingsPage() {
           ))}
         </div>
       </Card>
+
+      <Card title="CAD-Tool-Anbindung">
+        <div className="space-y-4">
+          <Field label="Import-URL (im CAD-Tool eintragen)">
+            <TextInput readOnly value={`${location.origin}/api/import/cad`} onFocus={(e) => e.currentTarget.select()} />
+          </Field>
+          <Field label="Import-Token (Shared Secret)">
+            <TextInput
+              value={values.cad_import_token ?? ""}
+              onChange={(e) => setValues({ ...values, cad_import_token: e.target.value })}
+              onFocus={(e) => e.currentTarget.select()}
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              Das CAD-Tool sendet diesen Token mit. Geheim halten; zum Sperren neu setzen und speichern.
+            </p>
+          </Field>
+        </div>
+      </Card>
     </div>
   );
 }

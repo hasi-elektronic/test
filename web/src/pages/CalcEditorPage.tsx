@@ -547,6 +547,14 @@ export default function CalcEditorPage() {
           <Button variant="secondary" onClick={deleteCalc} className="!text-red-600 hover:!bg-red-50">
             🗑 Löschen
           </Button>
+          {data.dxfKey && (
+            <a
+              href={`/api/calculations/${calc.id}/dxf`}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-300"
+            >
+              ⬇ DXF
+            </a>
+          )}
           <Button variant="secondary" onClick={copyVersion}>⧉ Neue Version</Button>
           <Button variant="secondary" onClick={addToCart}>🛒 Zum Angebot hinzufügen</Button>
           <Button onClick={save} disabled={saving}>{saving ? "Speichern…" : "💾 Speichern"}</Button>
