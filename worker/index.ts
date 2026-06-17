@@ -812,4 +812,15 @@ app.get("/bucket-keys", requireAdmin, async (c) => {
 
 app.notFound((c) => c.json({ error: "Nicht gefunden" }, 404));
 
-export default app;
+// Cloudflare-Pages-Einstieg (Advanced Mode): /api über Hono, sonst statische Assets (SPA-Fallback)
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.pathname.startsWith("/api")) return app.fetch(request, env, ctx);
+    const res = await env.ASSETS.fetch(request);
+    if (res.status === 404 && request.method === "GET" && !url.pathname.includes(".")) {
+      return env.ASSETS.fetch(new Request(`${url.origin}/index.html`));
+    }
+    return res;
+  },
+};
