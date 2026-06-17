@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "vite build && esbuild worker/index.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=dist/_worker.js",
     "check": "tsc -p tsconfig.json && tsc -p tsconfig.worker.json",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name=sickinger-kalkulation --branch=main",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=sickinger-kalkulationssystem --branch=main",
     "preview": "npm run build && wrangler pages dev dist"
   },
   "dependencies": {
