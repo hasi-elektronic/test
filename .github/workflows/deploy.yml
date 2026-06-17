@@ -35,4 +35,6 @@ jobs:
             exit 1
           fi
           export CLOUDFLARE_API_TOKEN
+          # Projekt anlegen (falls noch nicht vorhanden); Fehler ignorieren, wenn es schon existiert
+          npx wrangler pages project create sickinger-kalkulationssystem --production-branch=main 2>/dev/null || echo "Pages-Projekt existiert bereits"
           npx wrangler pages deploy dist --project-name=sickinger-kalkulationssystem --branch=main --commit-dirty=true
