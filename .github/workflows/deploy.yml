@@ -35,4 +35,4 @@ jobs:
             exit 1
           fi
           export CLOUDFLARE_API_TOKEN
-          npx wrangler pages deploy dist --project-name=sickinger-kalkulation --branch=main --commit-dirty=true
+          npx wrangler pages deploy dist --project-name=sickinger-kalkulationssystem --branch=main --commit-dirty=true
