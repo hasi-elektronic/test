@@ -4,7 +4,7 @@ import { api } from "../api";
 import { fmtEur, fmtDate } from "../format";
 import { Button, Field, NumInput, Spinner, TextInput } from "../components/ui";
 import type { CartItem, Customer } from "../../../shared/types";
-import { CI, CI_LIGHT, FIRMA, KONDITIONEN, LogoFallback, cartChanged } from "../offer";
+import { CI, CI_LIGHT, FIRMA, MWST, LogoFallback, cartChanged } from "../offer";
 
 // A4 bei 96 dpi
 const PAGE_W = 794;
@@ -22,9 +22,13 @@ export default function OfferPrintPage() {
 
   const heute = new Date().toISOString().slice(0, 10);
   const [empfaenger, setEmpfaenger] = useState("");
+  const [empfaengerAdr, setEmpfaengerAdr] = useState("");
   const [anfrage, setAnfrage] = useState("");
+  const [bestellnr, setBestellnr] = useState("");
   const [datum, setDatum] = useState(heute);
   const [freitext, setFreitext] = useState("");
+  const [bearbeiter, setBearbeiter] = useState("");
+  const [bearbeiterMail, setBearbeiterMail] = useState("");
 
   // Auto-fit auf eine A4-Seite
   const pageRef = useRef<HTMLDivElement>(null);
@@ -43,9 +47,22 @@ export default function OfferPrintPage() {
   };
   useEffect(load, []);
 
+  // Bearbeiter = angemeldeter Benutzer
+  useEffect(() => {
+    api
+      .get<{ name: string; email: string }>("/auth/me")
+      .then((u) => {
+        setBearbeiter((b) => b || u.name);
+        setBearbeiterMail((m) => m || u.email);
+      })
+      .catch(() => {});
+  }, []);
+
   const jahr = datum.slice(0, 4) || String(new Date().getFullYear());
   const angebotNr = `${jahr}-${datum.slice(5, 10).replace("-", "")}`;
   const summe = (items ?? []).reduce((a, p) => a + (p.menge || 0) * (p.einzel || 0), 0);
+  const mwst = summe * MWST;
+  const brutto = summe + mwst;
 
   // Inhalt messen und ggf. herunterskalieren, damit alles auf eine Seite passt
   // (CSS-transform verändert scrollHeight nicht → keine Endlosschleife)
@@ -55,7 +72,7 @@ export default function OfferPrintPage() {
     const available = PAGE_H - PAD_TOP - PAD_BOTTOM - footerH - 10;
     const content = bodyRef.current.scrollHeight;
     setScale(content > available ? Math.max(0.4, available / content) : 1);
-  }, [items, empfaenger, anfrage, datum, freitext, logoOk]);
+  }, [items, empfaenger, empfaengerAdr, anfrage, bestellnr, datum, freitext, bearbeiter, logoOk]);
 
   if (!items) return <Spinner />;
 
@@ -229,15 +246,26 @@ export default function OfferPrintPage() {
                 <Button onClick={save} disabled={saving}>{saving ? "Speichern…" : "💾 Speichern"}</Button>
               </div>
             </div>
-            <div className="grid sm:grid-cols-3 gap-3 mb-4">
+            <div className="grid sm:grid-cols-3 gap-3 mb-3">
               <Field label="Empfänger / Kunde">
                 <TextInput list="dl-kunden" value={empfaenger} onChange={(e) => setEmpfaenger(e.target.value)} />
                 <datalist id="dl-kunden">{customers.map((c) => <option key={c.id} value={c.name} />)}</datalist>
               </Field>
+              <Field label="Adresse Empfänger (optional)">
+                <TextInput value={empfaengerAdr} onChange={(e) => setEmpfaengerAdr(e.target.value)} placeholder="Straße, PLZ Ort" />
+              </Field>
+              <Field label="Datum"><TextInput type="date" value={datum} onChange={(e) => setDatum(e.target.value)} /></Field>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-3 mb-4">
               <Field label="Ihre Anfrage (optional)">
                 <TextInput value={anfrage} onChange={(e) => setAnfrage(e.target.value)} />
               </Field>
-              <Field label="Datum"><TextInput type="date" value={datum} onChange={(e) => setDatum(e.target.value)} /></Field>
+              <Field label="Ihre Bestellnummer (optional)">
+                <TextInput value={bestellnr} onChange={(e) => setBestellnr(e.target.value)} />
+              </Field>
+              <Field label="Bearbeiter">
+                <TextInput value={bearbeiter} onChange={(e) => setBearbeiter(e.target.value)} />
+              </Field>
             </div>
             <div className="space-y-2">
               {items.map((p, i) => (
@@ -278,105 +306,171 @@ export default function OfferPrintPage() {
                 transformOrigin: "top left",
               }}
             >
-              {/* Briefkopf */}
-              <div className="flex justify-between items-start mb-7">
-                <div className="text-[11px] text-slate-500 leading-snug pt-2">
-                  <div className="font-semibold text-slate-700">{FIRMA.name}</div>
-                  <div>{FIRMA.strasse}</div>
-                  <div>{FIRMA.ort}</div>
-                </div>
+              {/* Briefkopf: Logo + Kontaktblock rechts */}
+              <div className="flex justify-between items-start mb-6">
                 <div className="shrink-0">
                   {logoOk ? (
-                    <img src="/api/logo" alt={FIRMA.name} onError={() => setLogoOk(false)} onLoad={() => setLogoOk(true)} className="h-20 w-auto object-contain" />
+                    <img src="/api/logo" alt={FIRMA.name} onError={() => setLogoOk(false)} onLoad={() => setLogoOk(true)} className="h-16 w-auto object-contain" />
                   ) : (
                     <LogoFallback />
                   )}
                 </div>
+                <div className="text-[10px] text-slate-600 leading-snug text-right">
+                  <div className="font-semibold text-slate-800">{FIRMA.name}</div>
+                  <div>{FIRMA.strasse} · {FIRMA.ort}</div>
+                  <div>Tel.: {FIRMA.tel} · Fax: {FIRMA.fax}</div>
+                  <div>{FIRMA.email}</div>
+                  <div>{FIRMA.web}</div>
+                </div>
               </div>
 
-              {/* Empfänger + Angebotsdaten */}
-              <div className="flex justify-between items-start gap-8 mb-7">
+              {/* Absenderzeile + Empfänger links, Beleg-Tabelle rechts */}
+              <div className="flex justify-between items-start gap-8 mb-5">
                 <div className="text-sm text-slate-800">
-                  <div className="text-[10px] uppercase tracking-wide text-slate-400 mb-1">An</div>
+                  <div className="text-[9px] text-slate-400 border-b border-slate-300 pb-0.5 mb-1.5">
+                    {FIRMA.name} · {FIRMA.strasse} · {FIRMA.ort}
+                  </div>
                   <div className="font-semibold">{empfaenger || "—"}</div>
+                  {empfaengerAdr && <div className="whitespace-pre-line text-slate-600">{empfaengerAdr}</div>}
                 </div>
-                <table className="text-sm text-slate-700">
+                <table className="text-[11px] text-slate-700 border border-slate-300">
                   <tbody>
-                    <tr><td className="pr-4 text-slate-400">Angebot-Nr.</td><td className="font-medium text-right">{angebotNr}</td></tr>
-                    <tr><td className="pr-4 text-slate-400">Datum</td><td className="font-medium text-right">{fmtDate(datum)}</td></tr>
-                    {anfrage && <tr><td className="pr-4 text-slate-400">Ihre Anfrage</td><td className="font-medium text-right">{anfrage}</td></tr>}
+                    <tr className="border-b border-slate-200">
+                      <td className="px-2 py-1 text-slate-500 bg-slate-50">Angebot-Nr.</td>
+                      <td className="px-2 py-1 font-semibold text-right">{angebotNr}</td>
+                    </tr>
+                    <tr className="border-b border-slate-200">
+                      <td className="px-2 py-1 text-slate-500 bg-slate-50">Datum</td>
+                      <td className="px-2 py-1 text-right">{fmtDate(datum)}</td>
+                    </tr>
+                    {anfrage && (
+                      <tr className="border-b border-slate-200">
+                        <td className="px-2 py-1 text-slate-500 bg-slate-50">Ihre Anfrage</td>
+                        <td className="px-2 py-1 text-right">{anfrage}</td>
+                      </tr>
+                    )}
+                    {bestellnr && (
+                      <tr className="border-b border-slate-200">
+                        <td className="px-2 py-1 text-slate-500 bg-slate-50">Ihre Bestellnr.</td>
+                        <td className="px-2 py-1 text-right">{bestellnr}</td>
+                      </tr>
+                    )}
+                    <tr>
+                      <td className="px-2 py-1 text-slate-500 bg-slate-50">Seite</td>
+                      <td className="px-2 py-1 text-right">1</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
 
-              <div className="text-white font-bold text-base px-4 py-2 rounded-sm mb-4" style={{ backgroundColor: CI }}>
-                Angebot Nr. {angebotNr}
+              {/* Titel */}
+              <h1 className="text-xl font-bold mb-1" style={{ color: CI }}>Angebot Nr. {angebotNr}</h1>
+
+              <div className="text-sm text-slate-700 leading-relaxed mb-2">
+                <p>
+                  vielen Dank für Ihre Anfrage und Ihr Interesse an unseren Produkten. Gerne bieten wir Ihnen wie folgt an:
+                </p>
               </div>
 
-              <div className="text-sm text-slate-700 leading-relaxed mb-3">
-                <p className="mb-2">Sehr geehrte Damen und Herren,</p>
-                <p>vielen Dank für Ihre Anfrage. Gerne unterbreiten wir Ihnen hierfür das folgende Angebot:</p>
+              {freitext.trim() && <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed mb-3">{freitext}</div>}
+
+              {/* Bearbeiter-Zeile */}
+              <div className="flex gap-6 text-[11px] text-slate-600 border-y border-slate-200 py-1.5 mb-3">
+                <div><span className="text-slate-400">Bearbeiter:</span> <span className="font-medium">{bearbeiter || "—"}</span></div>
+                <div><span className="text-slate-400">Telefon:</span> {FIRMA.tel}</div>
+                {bearbeiterMail && <div><span className="text-slate-400">E-Mail:</span> {bearbeiterMail}</div>}
               </div>
 
-              {freitext.trim() && <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed mb-4">{freitext}</div>}
-
-              <table className="w-full text-sm mb-2">
+              {/* Positionstabelle im AB-Stil */}
+              <table className="w-full text-[12px] border-collapse mb-2">
                 <thead>
                   <tr className="text-white" style={{ backgroundColor: CI }}>
-                    <th className="text-left font-semibold px-3 py-2 w-10">Pos.</th>
-                    <th className="text-left font-semibold px-3 py-2">Bezeichnung</th>
-                    <th className="text-right font-semibold px-3 py-2">Menge</th>
-                    <th className="text-right font-semibold px-3 py-2">Einzelpreis</th>
-                    <th className="text-right font-semibold px-3 py-2">Gesamtpreis</th>
+                    <th className="text-left font-semibold px-2 py-1.5 w-8">Pos.</th>
+                    <th className="text-left font-semibold px-2 py-1.5">Artikel-Bezeichnung</th>
+                    <th className="text-right font-semibold px-2 py-1.5 w-16">Menge</th>
+                    <th className="text-left font-semibold px-2 py-1.5 w-12">ME</th>
+                    <th className="text-right font-semibold px-2 py-1.5 w-24">Einzelpreis</th>
+                    <th className="text-right font-semibold px-2 py-1.5 w-24">Gesamtpreis</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((p, i) => (
-                    <tr key={p.id} style={{ backgroundColor: i % 2 === 1 ? CI_LIGHT : "white" }}>
-                      <td className="px-3 py-2 align-top text-slate-500">{i + 1}</td>
-                      <td className="px-3 py-2 align-top">
+                    <tr key={p.id} className="border-b border-slate-200" style={{ backgroundColor: i % 2 === 1 ? CI_LIGHT : "white" }}>
+                      <td className="px-2 py-1.5 align-top text-slate-500">{(i + 1) * 10}</td>
+                      <td className="px-2 py-1.5 align-top">
                         <div className="font-medium text-slate-800">{p.bezeichnung || "—"}</div>
-                        {p.spec && <div className="text-xs text-slate-500">{p.spec}</div>}
-                        {p.drawing_no && <div className="text-xs text-slate-400">Zeichnung {p.drawing_no}</div>}
+                        {p.spec && <div className="text-[10px] text-slate-500">{p.spec}</div>}
+                        {p.drawing_no && <div className="text-[10px] text-slate-400">Zeichnung {p.drawing_no}</div>}
                       </td>
-                      <td className="px-3 py-2 align-top text-right whitespace-nowrap">{p.menge} Stück</td>
-                      <td className="px-3 py-2 align-top text-right whitespace-nowrap">{fmtEur(p.einzel)}</td>
-                      <td className="px-3 py-2 align-top text-right font-medium whitespace-nowrap">{fmtEur((p.menge || 0) * (p.einzel || 0))}</td>
+                      <td className="px-2 py-1.5 align-top text-right whitespace-nowrap">{p.menge}</td>
+                      <td className="px-2 py-1.5 align-top">Stück</td>
+                      <td className="px-2 py-1.5 align-top text-right whitespace-nowrap">{fmtEur(p.einzel)}</td>
+                      <td className="px-2 py-1.5 align-top text-right font-medium whitespace-nowrap">{fmtEur((p.menge || 0) * (p.einzel || 0))}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
 
-              <div className="flex justify-end mb-5">
-                <div className="w-64 text-sm">
-                  <div className="flex justify-between border-t-2 px-3 py-2 font-bold" style={{ borderColor: CI }}>
-                    <span>Angebotssumme netto</span><span>{fmtEur(summe)}</span>
-                  </div>
-                </div>
+              {/* Summenblock im AB-Stil */}
+              <div className="flex justify-end mb-4">
+                <table className="text-[12px] text-slate-700">
+                  <tbody>
+                    <tr>
+                      <td className="px-3 py-0.5 text-slate-500">Nettobetrag</td>
+                      <td className="px-3 py-0.5 text-right font-medium w-28">{fmtEur(summe)}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-0.5 text-slate-500">Versand / Verpackung</td>
+                      <td className="px-3 py-0.5 text-right">{fmtEur(0)}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-0.5 text-slate-500">MwSt 19,00 %</td>
+                      <td className="px-3 py-0.5 text-right">{fmtEur(mwst)}</td>
+                    </tr>
+                    <tr className="font-bold text-white" style={{ backgroundColor: CI }}>
+                      <td className="px-3 py-1">Bruttobetrag</td>
+                      <td className="px-3 py-1 text-right">{fmtEur(brutto)}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
-              <div className="mb-5">
-                <div className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: CI }}>Konditionen</div>
-                <ul className="text-sm text-slate-700 space-y-1">
-                  {KONDITIONEN.map((k, i) => (
-                    <li key={i} className="flex gap-2"><span style={{ color: CI }}>•</span><span>{k}</span></li>
-                  ))}
-                </ul>
+              {/* Konditionen kompakt */}
+              <div className="text-[11px] text-slate-600 leading-relaxed mb-3">
+                <span className="font-semibold text-slate-700">Konditionen: </span>
+                Alle Preise zzgl. der gesetzlichen MwSt., Lieferung ab Werk zzgl. Verpackung. Zahlungsbedingungen: 30 Tage netto. Dieses Angebot ist freibleibend und 30 Tage gültig.
               </div>
 
               <div className="text-sm text-slate-700 leading-relaxed">
-                <p className="mb-3">Wir würden uns freuen, Ihren Auftrag zu erhalten, und stehen für Rückfragen jederzeit gerne zur Verfügung.</p>
-                <p>Mit freundlichen Grüßen</p>
-                <p className="font-semibold text-slate-800 mt-1">{FIRMA.name}</p>
+                <p className="mb-3">Über Ihren Auftrag würden wir uns sehr freuen. Für Rückfragen stehen wir Ihnen jederzeit gerne zur Verfügung.</p>
+                <p>Mit freundlichen Grüßen aus Eberdingen</p>
+                <p className="mt-1">{bearbeiter}</p>
+                <p className="font-semibold text-slate-800">{FIRMA.name}</p>
               </div>
             </div>
 
-            {/* Fußzeile fest am Seitenende */}
+            {/* Fußzeile: gesetzliche Angaben fest am Seitenende */}
             <div ref={footerRef} style={{ position: "absolute", left: PAD_X, right: PAD_X, bottom: PAD_BOTTOM }}>
-              <div className="border-t-2 pt-3 text-center text-[10px] leading-relaxed text-slate-500" style={{ borderColor: CI }}>
-                <div className="font-semibold" style={{ color: CI }}>{FIRMA.name} · {FIRMA.strasse} · {FIRMA.ort}</div>
-                <div>Tel: {FIRMA.tel} · {FIRMA.email} · {FIRMA.web}</div>
-                <div>{FIRMA.ust} · {FIRMA.iban} · {FIRMA.reg}</div>
+              <div className="border-t-2 pt-2 grid grid-cols-3 gap-3 text-[8.5px] leading-snug text-slate-500" style={{ borderColor: CI }}>
+                <div>
+                  <div className="font-semibold text-slate-700">{FIRMA.name}</div>
+                  <div>{FIRMA.strasse}</div>
+                  <div>{FIRMA.ort}</div>
+                  <div>{FIRMA.gericht}</div>
+                </div>
+                <div>
+                  <div>Tel.: {FIRMA.tel}</div>
+                  <div>Fax: {FIRMA.fax}</div>
+                  <div>{FIRMA.email}</div>
+                  <div>{FIRMA.web}</div>
+                  <div>{FIRMA.ust}</div>
+                </div>
+                <div>
+                  <div className="font-semibold text-slate-700">{FIRMA.bank}</div>
+                  <div>IBAN {FIRMA.iban}</div>
+                  <div>BIC {FIRMA.bic}</div>
+                  <div className="mt-1">{FIRMA.gf}</div>
+                </div>
               </div>
             </div>
           </div>
