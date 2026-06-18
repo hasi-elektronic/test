@@ -28,11 +28,18 @@ header p{color:var(--muted);font-size:14px;margin-top:4px}
 .countdown b{color:var(--accent2);font-size:18px}
 
 /* Tabs */
-nav{position:sticky;top:0;z-index:30;background:rgba(15,18,38,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);margin:14px -16px 0;padding:10px 16px}
-.tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{flex:0 0 auto;background:var(--card);border:1px solid var(--line);color:var(--muted);padding:9px 14px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;transition:.15s}
+nav{z-index:30;margin:14px 0 0}
+.tabs{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:10px}
+.tab{background:var(--card);border:1px solid var(--line);color:var(--muted);padding:8px 12px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap;cursor:pointer;transition:.15s}
+.tab:hover{border-color:var(--accent);color:var(--text)}
 .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+/* sequential pager */
+.pager{display:flex;gap:10px;margin:8px 0 4px}
+.pager button{flex:1;background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:12px 10px;font-weight:700;font-size:14px;cursor:pointer;text-align:center;transition:.12s}
+.pager button:hover:not(:disabled){border-color:var(--accent)}
+.pager button:disabled{opacity:.35;cursor:default}
+.pager button .lbl{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pager button.nx{text-align:right}.pager button.pv{text-align:left}
 
 /* Sections */
 section{display:none;padding:18px 0 10px;animation:fade .25s}
@@ -462,6 +469,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:24px 0 8px}
   <div class="sessstat" id="sessstat"></div>
 </section>
 
+<div class="pager">
+  <button class="pv" id="prevBtn">←</button>
+  <button class="nx" id="nextBtn">→</button>
+</div>
+
 <footer>Mit ❤️ gemacht für Zeynep · Viel Erfolg in der KA am 24.06.2026</footer>
 </div>
 
@@ -476,18 +488,28 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:24px 0 8px}
   document.getElementById('planbar').style.width=Math.min(100,Math.round((total-d)/total*100))+'%';
 })();
 
-// ---- Tabs ----
-const tabs=document.getElementById('tabs');
-tabs.addEventListener('click',e=>{
-  const b=e.target.closest('.tab'); if(!b)return;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
-  b.classList.add('active');
-  document.getElementById(b.dataset.t).classList.add('active');
+// ---- Tabs + sequential pager ----
+const ORDER=[...document.querySelectorAll('#tabs .tab')].map(t=>({t:t.dataset.t,label:t.textContent.trim()}));
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.t===name));
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('active',s.id===name));
   window.scrollTo({top:0,behavior:'smooth'});
-  if(b.dataset.t==='graph')draw();
-  if(b.dataset.t==='ueben')initUeben();
+  if(name==='graph')draw();
+  if(name==='ueben')initUeben();
+  updatePager(name);
+}
+document.getElementById('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('.tab');if(!b)return;switchTab(b.dataset.t);
 });
+function updatePager(name){
+  const i=ORDER.findIndex(o=>o.t===name);
+  const prev=document.getElementById('prevBtn'),next=document.getElementById('nextBtn');
+  if(i>0){prev.disabled=false;prev.innerHTML='← Zurück<span class="lbl">'+ORDER[i-1].label+'</span>';prev.onclick=()=>switchTab(ORDER[i-1].t);}
+  else{prev.disabled=true;prev.innerHTML='←';prev.onclick=null;}
+  if(i<ORDER.length-1){next.disabled=false;next.innerHTML='Weiter →<span class="lbl">'+ORDER[i+1].label+'</span>';next.onclick=()=>switchTab(ORDER[i+1].t);}
+  else{next.disabled=true;next.innerHTML='→';next.onclick=null;}
+}
+updatePager('start');
 
 // ---- Log-Rechner ----
 function updLog(){
