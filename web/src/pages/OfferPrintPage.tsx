@@ -47,6 +47,15 @@ export default function OfferPrintPage() {
   };
   useEffect(load, []);
 
+  // Nächste Angebot-Nr. vom Server laden (nur einmal beim Öffnen)
+  useEffect(() => {
+    if (angebotNr) return; // bereits gesetzt (z. B. manuell geändert)
+    api.get<{ nr: string }>("/angebot/next-nr").then((r) => setAngebotNr(r.nr)).catch(() => {
+      const y = new Date().getFullYear();
+      setAngebotNr(`${y}-XXX`);
+    });
+  }, []);
+
   // Bearbeiter = angemeldeter Benutzer
   useEffect(() => {
     api
@@ -59,7 +68,8 @@ export default function OfferPrintPage() {
   }, []);
 
   const jahr = datum.slice(0, 4) || String(new Date().getFullYear());
-  const angebotNr = `${jahr}-${datum.slice(5, 10).replace("-", "")}`;
+    const [angebotNr, setAngebotNr] = useState("");
+  const [nrConfirmed, setNrConfirmed] = useState(false);
   const summe = (items ?? []).reduce((a, p) => a + (p.menge || 0) * (p.einzel || 0), 0);
   const mwst = summe * MWST;
   const brutto = summe + mwst;
@@ -127,6 +137,14 @@ export default function OfferPrintPage() {
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     pdf.addImage(dataUrl, "PNG", 0, 0, 210, 297);
     return pdf;
+  };
+
+  const confirmAndAction = async (action: () => Promise<void>) => {
+    if (!nrConfirmed) {
+      await api.post("/angebot/confirm-nr", { nr: angebotNr }).catch(() => {});
+      setNrConfirmed(true);
+    }
+    await action();
   };
 
   const downloadPdf = async () => {
@@ -209,10 +227,10 @@ export default function OfferPrintPage() {
           {items.length > 0 && (
             <Button variant="secondary" onClick={clearAll} className="!text-red-600 hover:!bg-red-50">Korb leeren</Button>
           )}
-          <Button variant="secondary" onClick={downloadPdf} disabled={items.length === 0 || pdfBusy}>
+          <Button variant="secondary" onClick={() => confirmAndAction(downloadPdf)} disabled={items.length === 0 || pdfBusy}>
             {pdfBusy ? "PDF…" : "⬇ PDF"}
           </Button>
-          <Button variant="secondary" onClick={() => window.print()} disabled={items.length === 0}>🖨 Drucken</Button>
+          <Button variant="secondary" onClick={() => confirmAndAction(async () => window.print())} disabled={items.length === 0}>🖨 Drucken</Button>
           <Button onClick={sendEmail} disabled={items.length === 0 || pdfBusy}>
             {pdfBusy ? "Erzeuge E-Mail…" : "📧 Per E-Mail senden"}
           </Button>
@@ -253,6 +271,17 @@ export default function OfferPrintPage() {
               </Field>
               <Field label="Adresse Empfänger (optional)">
                 <TextInput value={empfaengerAdr} onChange={(e) => setEmpfaengerAdr(e.target.value)} placeholder="Straße, PLZ Ort" />
+              </Field>
+              <Field label="Angebot-Nr.">
+                <div className="flex gap-2 items-center">
+                  <TextInput
+                    value={angebotNr}
+                    onChange={(e) => { setAngebotNr(e.target.value); setNrConfirmed(false); }}
+                    className="font-mono font-semibold"
+                    placeholder="2026-001"
+                  />
+                  {nrConfirmed && <span className="text-xs text-green-600 whitespace-nowrap">✓ gespeichert</span>}
+                </div>
               </Field>
               <Field label="Datum"><TextInput type="date" value={datum} onChange={(e) => setDatum(e.target.value)} /></Field>
             </div>
@@ -337,7 +366,7 @@ export default function OfferPrintPage() {
                   <tbody>
                     <tr className="border-b border-slate-200">
                       <td className="px-2 py-1 text-slate-500 bg-slate-50">Angebot-Nr.</td>
-                      <td className="px-2 py-1 font-semibold text-right">{angebotNr}</td>
+                      <td className="px-2 py-1 font-semibold text-right">{angebotNr || "…"}</td>
                     </tr>
                     <tr className="border-b border-slate-200">
                       <td className="px-2 py-1 text-slate-500 bg-slate-50">Datum</td>
