@@ -398,9 +398,24 @@ export default function OfferPrintPage() {
                     <tr key={p.id} className="border-b border-slate-200" style={{ backgroundColor: i % 2 === 1 ? CI_LIGHT : "white" }}>
                       <td className="px-2 py-1.5 align-top text-slate-500">{(i + 1) * 10}</td>
                       <td className="px-2 py-1.5 align-top">
-                        <div className="font-medium text-slate-800">{p.bezeichnung || "—"}</div>
-                        {p.spec && <div className="text-[10px] text-slate-500">{p.spec}</div>}
-                        {p.drawing_no && <div className="text-[10px] text-slate-400">Zeichnung {p.drawing_no}</div>}
+                        <div className="flex gap-2 items-start">
+                          {p.svgContent && (
+                            <div
+                              className="shrink-0 border border-slate-200 rounded bg-slate-50 overflow-hidden"
+                              style={{ width: 64, height: 64 }}
+                              dangerouslySetInnerHTML={{ __html: p.svgContent
+                                .replace(/<svg/, '<svg width="64" height="64" style="display:block"')
+                                .replace(/width="[^"]*"/, 'width="64"')
+                                .replace(/height="[^"]*"/, 'height="64"')
+                              }}
+                            />
+                          )}
+                          <div>
+                            <div className="font-medium text-slate-800">{p.bezeichnung || "—"}</div>
+                            {p.spec && <div className="text-[10px] text-slate-500">{p.spec}</div>}
+                            {p.drawing_no && <div className="text-[10px] text-slate-400">Zeichnung {p.drawing_no}</div>}
+                          </div>
+                        </div>
                       </td>
                       <td className="px-2 py-1.5 align-top text-right whitespace-nowrap">{p.menge}</td>
                       <td className="px-2 py-1.5 align-top">Stück</td>
