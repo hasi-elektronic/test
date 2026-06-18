@@ -1,6 +1,6 @@
 // Gemeinsame Typen für Worker (API) und Web-Frontend
 
-export type CalcType = "laufrad" | "drueckteile" | "baugruppe" | "schallkabine" | "ventilator";
+export type CalcType = "laufrad" | "drueckteile" | "baugruppe" | "schallkabine" | "ventilator" | "konusabwicklung" | "flansch" | "schablone";
 
 export type CalcStatus = "entwurf" | "angebot" | "auftrag" | "abgeschlossen" | "abgelehnt";
 
@@ -10,6 +10,9 @@ export const CALC_TYPE_LABELS: Record<CalcType, string> = {
   baugruppe: "Baugruppe",
   schallkabine: "Schallkabine",
   ventilator: "Ventilator",
+  konusabwicklung: "Konusabwicklung",
+  flansch: "Flansch",
+  schablone: "Schablone",
 };
 
 // Typen mit Zuschlagskalkulation (m²/Kg-Material + stundenbasierte Fertigung, nach Baugruppen)
@@ -116,6 +119,7 @@ export interface CalcData {
   areas: AreaItem[];
   offerPositions?: OfferPosition[]; // zusätzliche Angebotspositionen (nur fürs Angebot)
   dxfKey?: string; // R2-Schlüssel der aus dem CAD-Tool importierten DXF
+  svgKey?: string; // R2-Schlüssel des SVG-Vorschaubilds
 }
 
 export interface CalcResult {
