@@ -168,8 +168,11 @@ app.post("/import/cad", async (c) => {
     .first<{ value: string }>();
   if (!tok?.value || body.token !== tok.value) return jsonCors({ error: "Ungültiger Token" }, 401);
 
-  const type = ["laufrad", "drueckteile", "baugruppe"].includes(body.calc_type) ? body.calc_type : "drueckteile";
-  const data = emptyCalcData(type);
+  const VALID_TYPES = ["laufrad","drueckteile","baugruppe","schallkabine","ventilator","konusabwicklung","flansch","schablone"];
+  const type = VALID_TYPES.includes(body.calc_type) ? body.calc_type : "drueckteile";
+  // Für Kalkulation nutzen wir drueckteile-Formel für neue CAD-Typen
+  const calcBaseType = ["konusabwicklung","flansch","schablone"].includes(type) ? "drueckteile" : type;
+  const data = emptyCalcData(calcBaseType as any);
   data.batchQty = Number(body.batchQty) || 1;
   data.materials = (Array.isArray(body.positions) ? body.positions : []).map((p: any) => ({
     label: (p.label ?? "") + "",
@@ -191,15 +194,16 @@ app.post("/import/cad", async (c) => {
 
   const res = await c.env.DB.prepare(
     `INSERT INTO calculations
-     (calc_type, title, status, customer_name, drawing_no, calc_date, data, offer_text,
+     (calc_type, title, status, customer_name, drawing_no, calc_date, sachbearbeiter, data, offer_text,
       material_sum, prod_sum, ext_sum, ship_sum, manufacturing_cost, profit, sales_total, sales_unit)
-     VALUES (?, ?, 'entwurf', ?, ?, date('now'), ?, '', ?, ?, ?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, 'entwurf', ?, ?, date('now'), ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       type,
       (body.title ?? "") + "",
       (body.customer_name ?? "") + "",
       (body.drawing_no ?? "") + "",
+      (body.sachbearbeiter ?? "") + "",
       JSON.stringify(data),
       r.materialSum,
       r.prodSum,
@@ -220,10 +224,25 @@ app.post("/import/cad", async (c) => {
       const key = `cad-dxf/${id}.dxf`;
       await c.env.BILDER.put(key, bin, { httpMetadata: { contentType: "application/dxf" } });
       data.dxfKey = key;
-      await c.env.DB.prepare("UPDATE calculations SET data = ? WHERE id = ?").bind(JSON.stringify(data), id).run();
     } catch {
       /* DXF optional – Fehler ignorieren */
     }
+  }
+
+  // optionales SVG-Vorschaubild in R2 ablegen
+  if (typeof body.svg === "string" && body.svg.length > 0) {
+    try {
+      const svgKey = `cad-svg/${id}.svg`;
+      await c.env.BILDER.put(svgKey, body.svg, { httpMetadata: { contentType: "image/svg+xml" } });
+      data.svgKey = svgKey;
+    } catch {
+      /* SVG optional – Fehler ignorieren */
+    }
+  }
+
+  // Daten in DB aktualisieren wenn dxfKey oder svgKey gesetzt wurde
+  if (data.dxfKey || data.svgKey) {
+    await c.env.DB.prepare("UPDATE calculations SET data = ? WHERE id = ?").bind(JSON.stringify(data), id).run();
   }
 
   const origin = new URL(c.req.url).origin;
@@ -537,6 +556,19 @@ app.get("/calculations/:id/dxf", async (c) => {
     headers: {
       "Content-Type": "application/dxf",
       "Content-Disposition": `attachment; filename="kalkulation-${id}.dxf"`,
+    },
+  });
+});
+
+// SVG-Vorschaubild einer importierten Kalkulation abrufen
+app.get("/calculations/:id/svg", async (c) => {
+  const id = Number(c.req.param("id"));
+  const obj = await c.env.BILDER.get(`cad-svg/${id}.svg`);
+  if (!obj) return c.json({ error: "Kein SVG vorhanden" }, 404);
+  return new Response(obj.body as ReadableStream, {
+    headers: {
+      "Content-Type": "image/svg+xml",
+      "Cache-Control": "public, max-age=300, must-revalidate",
     },
   });
 });
