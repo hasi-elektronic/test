@@ -566,6 +566,32 @@ app.get("/calculations/:id/svg", async (c) => {
     },
   });
 });
+// Angebot-Nummer: nächste vorschlagen (ohne zu reservieren)
+app.get("/angebot/next-nr", async (c) => {
+  const year = new Date().getFullYear();
+  const [lastNr, lastYear] = await Promise.all([
+    c.env.DB.prepare("SELECT value FROM settings WHERE key = 'angebot_last_nr'").first<{value:string}>(),
+    c.env.DB.prepare("SELECT value FROM settings WHERE key = 'angebot_last_year'").first<{value:string}>(),
+  ]);
+  const prevYear = Number(lastYear?.value ?? 0);
+  const counter = prevYear < year ? 1 : (Number(lastNr?.value ?? 0) + 1);
+  const nr = `${year}-${String(counter).padStart(3, "0")}`;
+  return c.json({ nr, counter, year });
+});
+
+// Angebot-Nummer reservieren (beim PDF-Druck/Versand aufrufen)
+app.post("/angebot/confirm-nr", async (c) => {
+  const body = await c.req.json<{ nr: string }>().catch(() => ({ nr: "" }));
+  const year = new Date().getFullYear();
+  // Aus der Nummer den Counter extrahieren (z. B. "2026-007" → 7)
+  const counter = Number(body.nr.split("-")[1]) || 0;
+  if (!counter) return c.json({ error: "Ungültige Nummer" }, 400);
+  await Promise.all([
+    c.env.DB.prepare("UPDATE settings SET value = ? WHERE key = 'angebot_last_nr'").bind(String(counter)).run(),
+    c.env.DB.prepare("UPDATE settings SET value = ? WHERE key = 'angebot_last_year'").bind(String(year)).run(),
+  ]);
+  return c.json({ ok: true, nr: body.nr });
+});
 
 type CalcPayload = {
   calc_type: string;
