@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { calculate } from "../../../shared/calc";
@@ -21,6 +21,7 @@ import type {
 import { CALC_TYPE_LABELS, STATUS_LABELS } from "../../../shared/types";
 import { fmtDate, fmtEur, fmtNum } from "../format";
 import { Button, Card, Field, Modal, NumInput, Select, Spinner, TextInput } from "../components/ui";
+import { AuthContext } from "../auth";
 import { produktSpecOf, cartChanged } from "../offer";
 
 function SectionSum({ label, value }: { label: string; value: number }) {
@@ -170,6 +171,7 @@ export default function CalcEditorPage() {
 
   const [calc, setCalc] = useState<CalcRow | null>(null);
   const [data, setData] = useState<CalcData | null>(null);
+  const { user } = useContext(AuthContext);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [shipMaster, setShipMaster] = useState<ShippingMaster[]>([]);
@@ -221,6 +223,13 @@ export default function CalcEditorPage() {
       }
       setData(c.data);
       setMaterials(m.filter((x) => x.active));
+      // FIX: Material-Werte aus dem importierten calc erzwingen (Race-Condition-Schutz)
+      if (c.data?.materials?.length) {
+        const mNames = new Set(m.filter((x) => x.active).map((x) => x.name));
+        if (c.data.materials.some((row: { material?: string }) => row.material && mNames.has(row.material))) {
+          setData({ ...c.data }); // shallow clone → forced re-render
+        }
+      }
       setCustomers(cu);
       setShipMaster(sh);
       setBearbeiter(sb);
@@ -234,6 +243,17 @@ export default function CalcEditorPage() {
       setHideSkMat((c.data.skMaterials ?? []).some(isUsed.skMaterial));
     });
   }, [id]);
+
+  // FIX: Sachbearbeiter auto-set wenn neues calc und kein Bearbeiter gesetzt
+  useEffect(() => {
+    if (!calc || calc.sachbearbeiter || !user || bearbeiter.length === 0) return;
+    const userFirst = user.name.split(" ")[0].toLowerCase();
+    const match =
+      bearbeiter.find((b) => b.name.toLowerCase().startsWith(userFirst)) ||
+      bearbeiter.find((b) => b.name.toLowerCase().includes(userFirst)) ||
+      bearbeiter.find((b) => user.name.toLowerCase().includes(b.name.split(" ")[0].toLowerCase()));
+    if (match) updCalc({ sachbearbeiter: match.kuerzel || match.name });
+  }, [calc?.id, bearbeiter.length, user?.id]);
 
   const densities = useMemo(() => {
     const map: Record<string, number> = {};
@@ -553,6 +573,16 @@ export default function CalcEditorPage() {
               className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-300"
             >
               ⬇ DXF
+            </a>
+          )}
+          {data.svgKey && (
+            <a
+              href={`/api/calculations/${calc.id}/svg`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-300"
+            >
+              🖼 Abwicklung
             </a>
           )}
           <Button variant="secondary" onClick={copyVersion}>⧉ Neue Version</Button>
@@ -1310,6 +1340,17 @@ export default function CalcEditorPage() {
                 </tbody>
               </table>
               <p className="text-xs text-slate-400 mt-2">VK = HK inkl. Gewinnzuschlag – einzeln anbietbar, Summe = Verkaufspreis gesamt.</p>
+            </div>
+          )}
+          {data.svgKey && (
+            <div className="bg-white rounded-xl border border-slate-200 p-3 overflow-hidden">
+              <div className="text-xs text-slate-400 mb-2 font-medium">Abwicklung Vorschau</div>
+              <img
+                src={`/api/calculations/${calc.id}/svg`}
+                alt="Abwicklung"
+                className="w-full h-auto rounded"
+                style={{ maxHeight: "180px", objectFit: "contain", background: "#f8fafc" }}
+              />
             </div>
           )}
           <div className="bg-white rounded-xl border border-slate-200 p-4 text-xs text-slate-500 space-y-1">
