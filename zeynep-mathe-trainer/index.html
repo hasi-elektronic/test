@@ -126,6 +126,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:24px 0 8px}
 
 <nav><div class="wrap"><div class="tabs" id="tabs">
   <button class="tab active" data-t="start">🚀 Start</button>
+  <button class="tab" data-t="quiz">🎯 Quiz</button>
+  <button class="tab" data-t="ueben">🧠 Üben</button>
   <button class="tab" data-t="potenz">① Potenzgesetze</button>
   <button class="tab" data-t="wachstum">② Wachstum</button>
   <button class="tab" data-t="expfun">③ Exp.-Funktion</button>
@@ -134,8 +136,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:24px 0 8px}
   <button class="tab" data-t="efun">⑥ e & ln</button>
   <button class="tab" data-t="log">⑦ Logarithmus</button>
   <button class="tab" data-t="gleich">⑧ Gleichungen</button>
-  <button class="tab" data-t="quiz">🎯 Quiz</button>
-  <button class="tab" data-t="ueben">🧠 Üben</button>
 </div></div></nav>
 
 <div class="wrap">
@@ -623,6 +623,16 @@ const quiz=[
   {q:"Löse mit Substitution: e^(2x) − 6eˣ + 8 = 0",a:"x = ln2 oder x = ln4",s:["u=eˣ: u²−6u+8=0","u=2 oder u=4","eˣ=2→x=ln2 ; eˣ=4→x=ln4"]},
   {q:"Wogegen geht f(x)=eˣ für x → −∞ ? (Asymptote)",a:"gegen 0 (y=0)",s:["Für sehr kleine x wird eˣ winzig","Asymptote ist die x-Achse, y=0"]},
   {q:"Welchen Wert hat ln(e)?",a:"1",s:["ln ist Umkehrung von eˣ","ln(e¹) = 1"]},
+  {q:"Berechne: 10⁶ : 10²",a:"10⁴ = 10000",s:["Gleiche Basis : → Exponenten subtrahieren","10^(6−2) = 10⁴"]},
+  {q:"Wachstumsfaktor bei 30 % Abnahme?",a:"a = 0,7",s:["a = 1 − p/100","1 − 0,30 = 0,7"]},
+  {q:"f(x)=2·3ˣ. Berechne f(2).",a:"18",s:["2 · 3² = 2 · 9 = 18"]},
+  {q:"Asymptote von f(x)=3ˣ − 5 ?",a:"y = −5",s:["−5 verschiebt 5 nach unten","Asymptote y=0 → y=−5"]},
+  {q:"Wie entsteht 2^(x−3) aus 2ˣ?",a:"3 nach rechts",s:["c im Exponenten → waagerecht, andersrum","x−3 → nach rechts"]},
+  {q:"Berechne log₂(64).",a:"6",s:["Welche Hochzahl von 2 ergibt 64?","2⁶ = 64"]},
+  {q:"Schreibe als ein log: log(12) − log(4)",a:"log(3)",s:["minus → geteilt: log(12/4)","log(3)"]},
+  {q:"Löse: 5·2ˣ = 40",a:"x = 3",s:["2ˣ = 8","8 = 2³ → x = 3"]},
+  {q:"Berechne ln(e⁵).",a:"5",s:["ln(eˣ) = x"]},
+  {q:"Löse (Substitution): e^(2x) − 7eˣ + 12 = 0",a:"x = ln3 oder x = ln4",s:["u = eˣ: u² − 7u + 12 = 0","u = 3 oder u = 4","eˣ=3 → x=ln3 ; eˣ=4 → x=ln4"]},
 ];
 const qb=document.getElementById('quizbox');
 quiz.forEach((item,i)=>{
@@ -687,6 +697,52 @@ const BANK=[
   {id:'g4',topic:'gleich',q:'Löse: 10ˣ = 1000',a:'x = 3',steps:['1000 = 10³']},
   {id:'g5',topic:'gleich',q:'Löse (Ausklammern): 5ˣ·x − 5ˣ = 0',a:'x = 1',steps:['5ˣ·(x−1) = 0','5ˣ ≠ 0 → x−1 = 0']},
   {id:'g6',topic:'gleich',q:'Löse (Substitution): e^(2x) − 4eˣ + 3 = 0',a:'x = 0 oder x = ln3',steps:['u = eˣ: u² − 4u + 3 = 0','u = 1 oder u = 3','eˣ=1 → x=0 ; eˣ=3 → x=ln3']},
+  // ① Potenzgesetze (mehr)
+  {id:'p7',topic:'potenz',q:'Vereinfache: 2⁷ : 2⁴',a:'2³ = 8',steps:['Gleiche Basis : → subtrahieren','2^(7−4) = 2³']},
+  {id:'p8',topic:'potenz',q:'Vereinfache: (10²)³',a:'10⁶ = 1 000 000',steps:['Potenz hoch Potenz → multiplizieren','10^(2·3) = 10⁶']},
+  {id:'p9',topic:'potenz',q:'Berechne: 4⁰',a:'1',steps:['a⁰ = 1 (außer a=0)']},
+  {id:'p10',topic:'potenz',q:'Berechne: 2⁻⁴',a:'1/16 = 0,0625',steps:['a⁻ⁿ = 1/aⁿ','1/2⁴ = 1/16']},
+  {id:'p11',topic:'potenz',q:'Vereinfache: x³ · x⁴ · x',a:'x⁸',steps:['Exponenten addieren: 3+4+1 = 8']},
+  {id:'p12',topic:'potenz',q:'Schreibe als Potenz und berechne: √16',a:'16^(1/2) = 4',steps:['Wurzel = Hoch 1/n','16^(1/2) = 4']},
+  // ② Wachstum (mehr)
+  {id:'w7',topic:'wachstum',q:'Wachstumsfaktor bei +100 % Zunahme?',a:'a = 2',steps:['a = 1 + p/100 = 1 + 1']},
+  {id:'w8',topic:'wachstum',q:'Wachstumsfaktor bei 10 % Abnahme?',a:'a = 0,9',steps:['a = 1 − 0,10']},
+  {id:'w9',topic:'wachstum',q:'200 € zu 5 % Zinsen. Wert nach 3 Jahren?',a:'≈ 231,53 €',steps:['200 · 1,05³','200 · 1,157625 ≈ 231,53']},
+  {id:'w10',topic:'wachstum',q:'Bakterien verdreifachen sich pro Stunde. Start 10. Nach 2 h?',a:'90',steps:['10 · 3² = 10 · 9 = 90']},
+  {id:'w11',topic:'wachstum',q:'Linear oder exponentiell? 6, 12, 24, 48',a:'Exponentiell (×2) → f(x)=6·2ˣ',steps:['Quotient konstant = 2','Anfangswert 6']},
+  {id:'w12',topic:'wachstum',q:'Auto: 10000 €, verliert 20 % pro Jahr. Wert nach 1 Jahr?',a:'8000 €',steps:['a = 0,8 → 10000 · 0,8']},
+  // ③ Exp-Funktion (mehr)
+  {id:'e6',topic:'expfun',q:'f(x)=3·4ˣ. Anfangswert?',a:'3',steps:['b = f(0) = 3 · 4⁰ = 3']},
+  {id:'e7',topic:'expfun',q:'f(x)=2ˣ. Berechne f(3).',a:'8',steps:['2³ = 8']},
+  {id:'e8',topic:'expfun',q:'Graph durch (0|5) und (1|15). Funktionsgleichung?',a:'f(x)=5·3ˣ',steps:['b = f(0) = 5','a = 15/5 = 3']},
+  {id:'e9',topic:'expfun',q:'f(x)=0,5·2ˣ — steigend oder fallend?',a:'Steigend',steps:['a = 2 > 1 → steigend (b ändert das nicht)']},
+  {id:'e10',topic:'expfun',q:'f(x)=7·aˣ mit f(1)=21. Wie groß ist a?',a:'a = 3',steps:['7 · a¹ = 21 → a = 21/7 = 3']},
+  {id:'e11',topic:'expfun',q:'Durch welchen Punkt geht f(x)=b·aˣ immer?',a:'(0 | b)',steps:['f(0) = b · a⁰ = b']},
+  // ⑤ Transformation (mehr)
+  {id:'t6',topic:'trafo',q:'Wie entsteht 2ˣ + 5 aus 2ˣ?',a:'5 nach oben (Asymptote y=5)',steps:['+c außen → senkrecht nach oben']},
+  {id:'t7',topic:'trafo',q:'Wie entsteht 2^(x+3) aus 2ˣ?',a:'3 nach links',steps:['+c im Exponenten → waagerecht, andersrum','+3 → nach links']},
+  {id:'t8',topic:'trafo',q:'Wie entsteht 0,5·2ˣ aus 2ˣ?',a:'In y-Richtung gestaucht (×0,5)',steps:['Faktor 0<|c|<1 außen → Stauchung']},
+  {id:'t9',topic:'trafo',q:'Wie entsteht eˣ − 2 aus eˣ?',a:'2 nach unten (Asymptote y=−2)',steps:['−c außen → senkrecht nach unten']},
+  {id:'t10',topic:'trafo',q:'Beschreibe f(x)=2^(x−1)+3 aus 2ˣ.',a:'1 nach rechts, 3 nach oben',steps:['x−1 innen → 1 rechts','+3 außen → 3 hoch']},
+  // ⑥ e & ln (mehr)
+  {id:'n6',topic:'efun',q:'Berechne ln(e).',a:'1',steps:['ln(e¹) = 1']},
+  {id:'n7',topic:'efun',q:'Berechne e⁰.',a:'1',steps:['jede Zahl hoch 0 ist 1']},
+  {id:'n8',topic:'efun',q:'Berechne ln(e⁷).',a:'7',steps:['ln(eˣ) = x']},
+  {id:'n9',topic:'efun',q:'Berechne e^(ln1).',a:'1',steps:['e^(ln x) = x → x = 1']},
+  {id:'n10',topic:'efun',q:'Durch welchen Punkt geht f(x)=eˣ?',a:'(0 | 1)',steps:['e⁰ = 1']},
+  // ⑦ Logarithmus (mehr)
+  {id:'l8',topic:'log',q:'Berechne log₂(8).',a:'3',steps:['2³ = 8']},
+  {id:'l9',topic:'log',q:'Berechne log₁₀(100).',a:'2',steps:['10² = 100']},
+  {id:'l10',topic:'log',q:'Berechne log₃(81).',a:'4',steps:['3⁴ = 81']},
+  {id:'l11',topic:'log',q:'Vereinfache: log(50) + log(2)',a:'2',steps:['log(50·2) = log(100)','10² = 100 → 2']},
+  {id:'l12',topic:'log',q:'Berechne log₂(1/8).',a:'−3',steps:['2⁻³ = 1/8']},
+  // ⑧ Gleichungen (mehr)
+  {id:'g7',topic:'gleich',q:'Löse: 3ˣ = 81',a:'x = 4',steps:['81 = 3⁴']},
+  {id:'g8',topic:'gleich',q:'Löse: 2·5ˣ = 50',a:'x = 2',steps:['5ˣ = 25','25 = 5² → x = 2']},
+  {id:'g9',topic:'gleich',q:'Löse: eˣ = e⁴',a:'x = 4',steps:['gleiche Basis → Exponenten gleich']},
+  {id:'g10',topic:'gleich',q:'Löse (Ausklammern): e^(2x) − eˣ = 0',a:'x = 0',steps:['eˣ(eˣ − 1) = 0','eˣ≠0 → eˣ=1 → x=0']},
+  {id:'g11',topic:'gleich',q:'Löse (Substitution): e^(2x) − 5eˣ + 6 = 0',a:'x = ln2 oder x = ln3',steps:['u=eˣ: u²−5u+6=0','u=2 oder u=3','eˣ=2→x=ln2 ; eˣ=3→x=ln3']},
+  {id:'g12',topic:'gleich',q:'Löse: 4ˣ = 1',a:'x = 0',steps:['4⁰ = 1']},
 ];
 const TNAMES={potenz:'Potenzgesetze',wachstum:'Wachstum',expfun:'Exp-Funktion',trafo:'Transformation',efun:'e & ln',log:'Logarithmus',gleich:'Gleichungen'};
 const SRSKEY='zmt_srs_v1';
