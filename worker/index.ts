@@ -581,16 +581,27 @@ app.get("/angebot/next-nr", async (c) => {
 
 // Angebot-Nummer reservieren (beim PDF-Druck/Versand aufrufen)
 app.post("/angebot/confirm-nr", async (c) => {
-  const body = await c.req.json<{ nr: string }>().catch(() => ({ nr: "" }));
+  // Atomic increment – ignoriert die übergebene Nr, damit kein Race-Condition entsteht
   const year = new Date().getFullYear();
-  // Aus der Nummer den Counter extrahieren (z. B. "2026-007" → 7)
-  const counter = Number(body.nr.split("-")[1]) || 0;
-  if (!counter) return c.json({ error: "Ungültige Nummer" }, 400);
-  await Promise.all([
-    c.env.DB.prepare("UPDATE settings SET value = ? WHERE key = 'angebot_last_nr'").bind(String(counter)).run(),
-    c.env.DB.prepare("UPDATE settings SET value = ? WHERE key = 'angebot_last_year'").bind(String(year)).run(),
-  ]);
-  return c.json({ ok: true, nr: body.nr });
+  const lastYear = await c.env.DB.prepare(
+    "SELECT value FROM settings WHERE key = 'angebot_last_year'"
+  ).first<{ value: string }>();
+  const prevYear = Number(lastYear?.value ?? 0);
+  if (prevYear < year) {
+    // Jahreswechsel: Zähler auf 1 zurücksetzen
+    await c.env.DB.prepare("UPDATE settings SET value = ? WHERE key = 'angebot_last_year'").bind(String(year)).run();
+    await c.env.DB.prepare("UPDATE settings SET value = '1' WHERE key = 'angebot_last_nr'").run();
+    return c.json({ ok: true, nr: `${year}-001` });
+  }
+  // Atomarer Zähler-Increment direkt in SQL
+  await c.env.DB.prepare(
+    "UPDATE settings SET value = CAST(CAST(value AS INTEGER) + 1 AS TEXT) WHERE key = 'angebot_last_nr'"
+  ).run();
+  const row = await c.env.DB.prepare(
+    "SELECT value FROM settings WHERE key = 'angebot_last_nr'"
+  ).first<{ value: string }>();
+  const nr = `${year}-${String(Number(row?.value ?? 1)).padStart(3, "0")}`;
+  return c.json({ ok: true, nr });
 });
 
 type CalcPayload = {
