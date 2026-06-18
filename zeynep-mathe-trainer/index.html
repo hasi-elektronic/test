@@ -126,11 +126,14 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:24px 0 8px}
 
 <nav><div class="wrap"><div class="tabs" id="tabs">
   <button class="tab active" data-t="start">🚀 Start</button>
+  <button class="tab" data-t="statistik">📊 Statistik</button>
   <button class="tab" data-t="quiz">🎯 Quiz</button>
   <button class="tab" data-t="ueben">🧠 Üben</button>
   <button class="tab" data-t="klausur">📝 Probeklausur</button>
   <button class="tab" data-t="fehler">📕 Fehlerheft</button>
   <button class="tab" data-t="zuordnen">🔗 Zuordnen</button>
+  <button class="tab" data-t="loeser">🧮 Löser</button>
+  <button class="tab" data-t="formel">📄 Formeln</button>
   <button class="tab" data-t="potenz">① Potenzgesetze</button>
   <button class="tab" data-t="wachstum">② Wachstum</button>
   <button class="tab" data-t="expfun">③ Exp.-Funktion</button>
@@ -147,6 +150,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:24px 0 8px}
 <section class="active" id="start">
   <h2 class="sec">🚀 Los geht's, Zeynep!</h2>
   <p class="sub">Keine Panik. Diese Themen sind logisch – wenn du sie verstehst, ist die KA gut machbar.</p>
+  <div class="card" id="streakCard"></div>
   <div class="card">
     <h3>📅 Dein 6-Tage-Plan</h3>
     <div class="plan-day"><div class="d">Tag 1</div><div class="t">Potenzgesetze (3 Regeln + 15 Aufgaben)</div><div class="h">1 Std</div></div>
@@ -535,6 +539,103 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:24px 0 8px}
   <div class="tr">🇹🇷 <b>Türkçe:</b> Grafiğe bak — yükseliyor mu düşüyor mu (a&gt;1 mi 0&lt;a&lt;1 mi), y eksenini nerede kesiyor (b), yukarı/aşağı kaymış mı (c)? Doğru denklemi seç. Doğru bildikçe seri (🔥) artar.</div>
 </section>
 
+<!-- STATISTIK / LÖSER / FORMELN -->
+<style>
+.stepctrl{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.stepbtn{background:var(--accent);border:none;color:#fff;font-weight:700;font-size:13px;padding:10px 14px;border-radius:10px;cursor:pointer}
+.stepbtn.alt{background:var(--card2);color:var(--muted);border:1px solid var(--line)}
+.sres{color:var(--green);font-weight:700;font-size:16px;margin-top:8px}
+.pcheck{flex:0 0 auto;width:24px;height:24px;border:2px solid var(--line);border-radius:50%;cursor:pointer;display:inline-block;position:relative}
+.plan-day.pdone .pcheck{background:var(--green);border-color:var(--green)}
+.plan-day.pdone .pcheck::after{content:"✓";position:absolute;color:#06281c;font-size:15px;font-weight:900;left:4px;top:0}
+.plan-day.pdone .t{text-decoration:line-through;color:var(--muted)}
+#eqIn{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:13px;font-size:16px;font-weight:600;font-family:inherit}
+.gloss{width:100%;border-collapse:collapse;font-size:14px}
+.gloss td{border-bottom:1px solid var(--line);padding:8px 6px}
+.gloss td:first-child{color:var(--accent2);font-weight:600;width:48%}
+.gloss td:last-child{color:var(--muted)}
+@media print{
+  nav,.pager,footer,.countdown,#printBtn,.tr{display:none!important}
+  section{display:none!important}
+  section#formel{display:block!important}
+  body{background:#fff;color:#000}
+  .card{background:#fff!important;border:1px solid #999!important;color:#000!important}
+  .formula{background:#f4f4f4!important;border:1px solid #ccc!important;color:#000!important}
+  h2.sec,.card h3,.gloss td{color:#000!important}
+}
+</style>
+
+<section id="statistik">
+  <h2 class="sec">📊 Mein Fortschritt</h2>
+  <p class="sub">Wo stehst du? Alles auf einen Blick – damit du weißt, was noch dran ist.</p>
+  <div id="statContent"></div>
+</section>
+
+<section id="loeser">
+  <h2 class="sec">🧮 Gleichungslöser</h2>
+  <p class="sub">Gib eine Exponentialgleichung ein – ich zeige den Lösungsweg Schritt für Schritt.</p>
+  <div class="card">
+    <input type="text" id="eqIn" placeholder="z. B. 3*2^x=48">
+    <button class="bigbtn" id="solveBtn" style="margin-top:10px">Lösen</button>
+    <div class="chips" id="eqEx" style="margin-top:10px">
+      <span class="chip" data-q="2^x=16">2^x=16</span>
+      <span class="chip" data-q="3*2^x=48">3·2^x=48</span>
+      <span class="chip" data-q="5*2^x-3=37">5·2^x−3=37</span>
+      <span class="chip" data-q="e^x=20">e^x=20</span>
+      <span class="chip" data-q="4*3^x=324">4·3^x=324</span>
+    </div>
+    <div id="eqOut" style="margin-top:14px"></div>
+  </div>
+  <div class="tr">🇹🇷 <b>Format:</b> <code>k*taban^x +/- m = c</code> şeklinde yaz (örn. <code>3*2^x=48</code>). Taban bir sayı veya <code>e</code> olabilir. „<code>^</code>" = üs, „<code>*</code>" = çarpma. Çözücü adım adım gösterir.</div>
+</section>
+
+<section id="formel">
+  <h2 class="sec">📄 Formelsammlung & Wörterbuch</h2>
+  <p class="sub">Alles Wichtige auf einer Seite – zum Drucken oder schnell Nachschlagen.</p>
+  <button class="bigbtn" id="printBtn" style="margin-bottom:14px">🖨 Drucken / als PDF speichern</button>
+  <div class="card">
+    <h3>Potenzgesetze</h3>
+    <div class="formula">aᵐ · aⁿ = a<sup>m+n</sup></div>
+    <div class="formula">aᵐ : aⁿ = a<sup>m−n</sup></div>
+    <div class="formula">(aᵐ)ⁿ = a<sup>m·n</sup></div>
+    <div class="formula">a⁰ = 1 &nbsp;·&nbsp; a⁻ⁿ = 1/aⁿ &nbsp;·&nbsp; a<sup>1/n</sup> = ⁿ√a</div>
+  </div>
+  <div class="card">
+    <h3>Exponentialfunktion & Wachstum</h3>
+    <div class="formula">f(x) = b · aˣ<br><small>b = Anfangswert = f(0) · a = Wachstumsfaktor</small></div>
+    <div class="formula">Zunahme um p %: a = 1 + p/100<br>Abnahme um p %: a = 1 − p/100</div>
+    <div class="formula">a&gt;1 steigend · 0&lt;a&lt;1 fallend · Asymptote y=0 (bzw. y=c bei +c)</div>
+  </div>
+  <div class="card">
+    <h3>Logarithmus & e</h3>
+    <div class="formula">aˣ = b ⟺ x = log<sub>a</sub>(b)</div>
+    <div class="formula">log(u·v)=log u+log v &nbsp;·&nbsp; log(u:v)=log u−log v &nbsp;·&nbsp; log(uʳ)=r·log u</div>
+    <div class="formula">log<sub>a</sub>(b) = ln(b)/ln(a) &nbsp;·&nbsp; e ≈ 2,718 &nbsp;·&nbsp; ln(e)=1, ln(1)=0</div>
+  </div>
+  <div class="card">
+    <h3>🇩🇪 ↔ 🇹🇷 Fachbegriffe</h3>
+    <table class="gloss"><tbody>
+      <tr><td>Exponentialfunktion</td><td>üstel fonksiyon</td></tr>
+      <tr><td>Anfangswert</td><td>başlangıç değeri</td></tr>
+      <tr><td>Wachstumsfaktor</td><td>büyüme faktörü</td></tr>
+      <tr><td>Zunahme / Abnahme</td><td>artış / azalma</td></tr>
+      <tr><td>steigend / fallend</td><td>artan / azalan</td></tr>
+      <tr><td>Monotonie</td><td>monotonluk</td></tr>
+      <tr><td>Asymptote</td><td>asimptot</td></tr>
+      <tr><td>Graph / Funktionsgleichung</td><td>grafik / fonksiyon denklemi</td></tr>
+      <tr><td>verschieben</td><td>kaydırmak</td></tr>
+      <tr><td>spiegeln</td><td>yansıtmak (ayna)</td></tr>
+      <tr><td>strecken / stauchen</td><td>germek / sıkıştırmak</td></tr>
+      <tr><td>Logarithmus</td><td>logaritma</td></tr>
+      <tr><td>natürlicher Logarithmus (ln)</td><td>doğal logaritma</td></tr>
+      <tr><td>Gleichung lösen</td><td>denklem çözmek</td></tr>
+      <tr><td>ausklammern</td><td>parantezine almak</td></tr>
+      <tr><td>Substitution</td><td>yerine koyma (değişken)</td></tr>
+      <tr><td>Satz vom Nullprodukt</td><td>sıfır çarpım kuralı</td></tr>
+    </tbody></table>
+  </div>
+</section>
+
 <div class="pager">
   <button class="pv" id="prevBtn">←</button>
   <button class="nx" id="nextBtn">→</button>
@@ -565,6 +666,9 @@ function switchTab(name){
   if(name==='klausur')initKlausur();
   if(name==='fehler')renderFehler();
   if(name==='zuordnen')initZuordnen();
+  if(name==='statistik')renderStat();
+  if(name==='loeser')initLoeser();
+  if(name==='start')initStart();
   updatePager(name);
 }
 document.getElementById('tabs').addEventListener('click',e=>{
@@ -709,7 +813,7 @@ quiz.forEach((item,i)=>{
   div.innerHTML=`<div class="qhead"><span class="qnum">Aufgabe ${i+1}/${quiz.length}</span></div>
     <div class="qtext">${item.q}</div>
     <button class="reveal">Lösung zeigen</button>
-    <div class="ans"><div class="res">✅ ${item.a}</div>${item.s.map(x=>`<div class="step">→ ${x}</div>`).join('')}</div>`;
+    <div class="ans">${stepperHTML(item.s,item.a)}</div>`;
   div.querySelector('.reveal').addEventListener('click',()=>{
     div.classList.toggle('show');
     div.querySelector('.reveal').textContent=div.classList.contains('show')?'Lösung verbergen':'Lösung zeigen';
@@ -840,8 +944,7 @@ function renderCard(){
       <button class="b-sure" data-c="3">😎 Sicher</button>
     </div>
     <div class="ansbox" id="ansbox">
-      <div class="res">✅ ${current.a}</div>
-      ${current.steps.map(s=>`<div class="step">→ ${s}</div>`).join('')}
+      ${stepperHTML(current.steps,current.a)}
       <div class="btnrow" style="margin-top:16px">
         <button class="b-again" data-g="again">🔁 Nochmal</button>
         <button class="b-known" data-g="known">✅ Gewusst</button>
@@ -859,7 +962,7 @@ function gradeCard(g){
   srs[id].last=Date.now();
   session.done++; g==='known'?session.known++:session.again++;
   g==='known' ? removeMistake(id) : addMistake(current);
-  saveSRS();lastId=id;updStats();renderCard();
+  saveSRS();lastId=id;markStudiedToday();updStats();renderCard();
 }
 function updStats(){
   const p=uPool();const counts=[0,0,0,0,0,0];
@@ -904,8 +1007,7 @@ function renderFehler(){
   list.innerHTML=ids.map(id=>{const c=byId(id);return `<div class="fcard">
     <span class="fdone" data-done="${id}">✓ Verstanden</span>
     <div class="fq">${TNAMES[c.topic]}: ${c.q}</div>
-    <div class="res" style="color:var(--green);font-weight:700;margin-bottom:4px">✅ ${c.a}</div>
-    ${c.steps.map(s=>`<div class="step">→ ${s}</div>`).join('')}</div>`;}).join('');
+    ${stepperHTML(c.steps,c.a)}</div>`;}).join('');
   document.getElementById('clearFehler').onclick=()=>{if(confirm('Fehlerheft komplett leeren?')){saveMistakes([]);renderFehler();}};
   list.querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{removeMistake(b.dataset.done);renderFehler();});
 }
@@ -944,8 +1046,7 @@ function renderK(){
     <div class="qtext">${c.q}</div>
     <button class="bigbtn" id="kshow">Lösung zeigen</button>
     <div class="ansbox" id="kans">
-      <div class="res">✅ ${c.a}</div>
-      ${c.steps.map(s=>`<div class="step">→ ${s}</div>`).join('')}
+      ${stepperHTML(c.steps,c.a)}
       <div class="btnrow" style="margin-top:14px">
         <button class="b-again" data-k="0">❌ Falsch</button>
         <button class="b-known" data-k="1">✅ Richtig</button>
@@ -957,6 +1058,7 @@ function markK(ok,c){
   if(kState.answered)return;kState.answered=true;
   if(ok){kState.correct++;removeMistake(c.id);}
   else{kState.wrong[c.topic]=(kState.wrong[c.topic]||0)+1;addMistake(c);}
+  markStudiedToday();
   kState.idx++;
   if(kState.idx>=kState.qs.length)finishKlausur();else renderK();
 }
@@ -965,6 +1067,8 @@ function finishKlausur(){
   const tot=kState.qs.length,cor=kState.correct,pct=Math.round(cor/tot*100);
   let note='6';if(pct>=92)note='1';else if(pct>=81)note='2';else if(pct>=67)note='3';else if(pct>=50)note='4';else if(pct>=30)note='5';
   const weak=Object.entries(kState.wrong).sort((a,b)=>b[1]-a[1]).map(([t,n])=>TNAMES[t]+' ('+n+')');
+  localStorage.setItem('zmt_exam_v1',JSON.stringify({cor,tot,pct,note,date:todayStr()}));
+  localStorage.setItem('zmt_examcount',(+(localStorage.getItem('zmt_examcount')||0)+1));
   document.getElementById('klausurRun').style.display='none';
   const r=document.getElementById('klausurResult');r.style.display='';
   r.innerHTML=`<div class="card" style="text-align:center">
@@ -1022,10 +1126,141 @@ function zPick(i,ci,box){
   btns[ci].classList.add('correct');
   const ok=i===ci;
   if(ok){zScore++;zStreak++;}else{btns[i].classList.add('wrong');zStreak=0;}
+  markStudiedToday();
   document.getElementById('zscore').textContent='Punkte: '+zScore+' · Serie: '+zStreak+' 🔥';
   document.getElementById('zfeed').innerHTML='<div class="card" style="margin-top:12px">'+(ok?'<b style="color:var(--green)">✅ Richtig!</b>':'<b style="color:var(--red)">❌ Leider falsch.</b> Richtig: <b>'+zLabel(zAns)+'</b>')+'<button class="bigbtn" id="znext" style="margin-top:12px">Nächster Graph →</button></div>';
   document.getElementById('znext').onclick=newZ;
 }
+
+// ===== Progressive Schritt-für-Schritt (alle Modi) =====
+function stepperHTML(steps,answer){
+  return '<div class="stepper" data-i="0">'+
+    steps.map((s,i)=>'<div class="step sstep" data-s="'+i+'" style="display:none">→ '+s+'</div>').join('')+
+    '<div class="sres" style="display:none">✅ '+answer+'</div>'+
+    '<div class="stepctrl">'+
+      '<button class="stepbtn" data-act="next">💡 Schritt für Schritt</button>'+
+      '<button class="stepbtn alt" data-act="all">Alles zeigen</button>'+
+    '</div></div>';
+}
+document.addEventListener('click',function(e){
+  const b=e.target.closest('.stepbtn');if(!b)return;
+  const box=b.closest('.stepper');if(!box)return;
+  const steps=[...box.querySelectorAll('.sstep')],res=box.querySelector('.sres'),ctrl=box.querySelector('.stepctrl');
+  if(b.dataset.act==='all'){steps.forEach(s=>s.style.display='');res.style.display='';ctrl.style.display='none';return;}
+  let i=+box.dataset.i;
+  if(i<steps.length){steps[i].style.display='';i++;box.dataset.i=i;
+    box.querySelector('[data-act=next]').textContent = i<steps.length ? '💡 Nächster Schritt ('+i+'/'+steps.length+')' : '✅ Lösung anzeigen';
+  } else {res.style.display='';ctrl.style.display='none';}
+});
+
+// ===== Streak + Tagesziel + Lernplan =====
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function markStudiedToday(){
+  const t=todayStr();
+  let st=JSON.parse(localStorage.getItem('zmt_streak')||'{}');
+  if(st.last!==t){
+    const yd=new Date(Date.now()-86400000),y=yd.getFullYear()+'-'+(yd.getMonth()+1)+'-'+yd.getDate();
+    st.streak=(st.last===y)?(st.streak||0)+1:1; st.last=t;
+    localStorage.setItem('zmt_streak',JSON.stringify(st));
+  }
+  let d=JSON.parse(localStorage.getItem('zmt_daily')||'{}');
+  if(d.date!==t)d={date:t,count:0};
+  d.count++; localStorage.setItem('zmt_daily',JSON.stringify(d));
+  renderStreak();
+}
+function renderStreak(){
+  const el=document.getElementById('streakCard');if(!el)return;
+  const st=JSON.parse(localStorage.getItem('zmt_streak')||'{}');
+  const d=JSON.parse(localStorage.getItem('zmt_daily')||'{}');
+  const cnt=(d.date===todayStr())?(d.count||0):0,goal=15,pct=Math.min(100,Math.round(cnt/goal*100)),s=st.streak||0;
+  el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center">'+
+    '<h3 style="margin:0">🔥 '+s+' Tag'+(s===1?'':'e')+' in Folge</h3>'+
+    '<span class="muted" style="font-size:13px">Heute: '+cnt+'/'+goal+' Karten</span></div>'+
+    '<div class="progress" style="margin-top:10px"><div style="width:'+pct+'%"></div></div>'+
+    (cnt>=goal?'<p style="color:var(--green);font-size:13px;margin-top:6px">✅ Tagesziel geschafft – stark!</p>':'<p class="muted" style="font-size:12px;margin-top:6px">Tagesziel: '+goal+' Karten. Dranbleiben! 💪</p>');
+}
+let planState=JSON.parse(localStorage.getItem('zmt_plan')||'[]');
+function enhancePlan(){
+  const days=[...document.querySelectorAll('#start .plan-day')];
+  days.forEach((el,i)=>{
+    if(!el.querySelector('.pcheck')){
+      const c=document.createElement('span');c.className='pcheck';
+      el.insertBefore(c,el.firstChild);
+      c.onclick=()=>{planState[i]=!planState[i];localStorage.setItem('zmt_plan',JSON.stringify(planState));el.classList.toggle('pdone',!!planState[i]);updatePlanBar();};
+    }
+    el.classList.toggle('pdone',!!planState[i]);
+  });
+  updatePlanBar();
+}
+function updatePlanBar(){
+  const days=document.querySelectorAll('#start .plan-day').length||6;
+  const bar=document.getElementById('planbar');if(bar)bar.style.width=Math.round(planState.filter(Boolean).length/days*100)+'%';
+}
+function initStart(){renderStreak();enhancePlan();}
+
+// ===== Dashboard =====
+function renderStat(){
+  const el=document.getElementById('statContent');if(!el)return;
+  const total=BANK.length,mastered=BANK.filter(c=>boxOf(c.id)>=4).length;
+  const mist=getMistakes().filter(id=>byId(id)).length;
+  const ex=JSON.parse(localStorage.getItem('zmt_exam_v1')||'null');
+  const exc=+(localStorage.getItem('zmt_examcount')||0);
+  const topics=['potenz','wachstum','expfun','trafo','efun','log','gleich'];
+  const rows=topics.map(t=>{const cs=BANK.filter(c=>c.topic===t),m=cs.filter(c=>boxOf(c.id)>=4).length;return {t,m,n:cs.length,pct:Math.round(m/cs.length*100)};}).sort((a,b)=>a.pct-b.pct);
+  const weak=rows.filter(r=>r.pct<50).slice(0,3).map(r=>TNAMES[r.t]);
+  el.innerHTML=
+    '<div class="grid2">'+
+      '<div class="mini"><div class="k">Gemeistert (Box 4–5)</div><div class="v">'+mastered+'/'+total+'</div></div>'+
+      '<div class="mini"><div class="k">📕 Im Fehlerheft</div><div class="v">'+mist+'</div></div>'+
+      '<div class="mini"><div class="k">Probeklausuren</div><div class="v">'+exc+'</div></div>'+
+      '<div class="mini"><div class="k">Letzte Note</div><div class="v">'+(ex?('Note '+ex.note+' · '+ex.cor+'/'+ex.tot):'–')+'</div></div>'+
+    '</div>'+
+    '<div class="card" style="margin-top:14px"><h3>Beherrschung pro Thema</h3>'+
+      rows.map(r=>'<div style="margin:11px 0"><div style="display:flex;justify-content:space-between;font-size:13.5px"><span>'+TNAMES[r.t]+(r.pct<50?' ⚠️':'')+'</span><span class="muted">'+r.m+'/'+r.n+' · '+r.pct+'%</span></div><div class="progress" style="margin-top:4px"><div style="width:'+r.pct+'%"></div></div></div>').join('')+
+    '</div>'+
+    (weak.length?'<div class="tr">🇹🇷 <b>Odaklan:</b> En zayıf konuların → <b>'+weak.join(', ')+'</b>. Üben sekmesinde o konuyu seçip biraz daha çalış.</div>':'<div class="card" style="text-align:center"><p style="color:var(--green);font-weight:700">Harika gidiyorsun! Tüm konular yolunda 🎉</p></div>');
+}
+
+// ===== Gleichungslöser =====
+function fmtNum(n){return Number.isInteger(n)?(''+n):((''+(Math.round(n*1000)/1000)).replace('.',','));}
+function solveEq(raw){
+  let s=(raw||'').replace(/\s+/g,'').replace(/·/g,'*').replace(/−/g,'-').replace(/,/g,'.').toLowerCase();
+  const m=s.match(/^(?:(-?\d*\.?\d+)\*)?(\d*\.?\d+|e)\^x([+\-]\d*\.?\d+)?=(-?\d*\.?\d+)$/);
+  if(!m)return {err:true};
+  const k=m[1]!==undefined?parseFloat(m[1]):1;
+  const baseStr=m[2], a=baseStr==='e'?Math.E:parseFloat(baseStr);
+  const add=m[3]!==undefined?parseFloat(m[3]):0, c=parseFloat(m[4]);
+  if(k===0||a<=0||a===1)return {err:true};
+  const bDisp=baseStr==='e'?'e':baseStr;
+  const steps=['Gegeben:  '+(k!==1?fmtNum(k)+'·':'')+bDisp+'ˣ'+(add?(add>0?' + '+fmtNum(add):' − '+fmtNum(-add)):'')+' = '+fmtNum(c)];
+  let rhs=c;
+  if(add!==0){rhs=c-add;steps.push((add>0?'− '+fmtNum(add):'+ '+fmtNum(-add))+' auf beiden Seiten:  '+(k!==1?fmtNum(k)+'·':'')+bDisp+'ˣ = '+fmtNum(rhs));}
+  let pw=rhs;
+  if(k!==1){pw=rhs/k;steps.push(': '+fmtNum(k)+'  →  '+bDisp+'ˣ = '+fmtNum(pw));}
+  if(pw<=0){steps.push('Aber '+bDisp+'ˣ ist immer positiv → keine Lösung.');return {steps,ans:'keine Lösung'};}
+  const x=Math.log(pw)/Math.log(a);
+  if(baseStr==='e')steps.push('ln(...) auf beiden Seiten:  x = ln('+fmtNum(pw)+')');
+  else steps.push('logarithmieren:  x = log_'+bDisp+'('+fmtNum(pw)+') = ln('+fmtNum(pw)+') / ln('+bDisp+')');
+  const xr=Math.round(x*1000)/1000;
+  return {steps,ans: Number.isInteger(x)?('x = '+x):('x ≈ '+fmtNum(xr))};
+}
+function runSolve(q){
+  const out=document.getElementById('eqOut'),r=solveEq(q);
+  if(r.err){out.innerHTML='<p style="color:var(--red)">Konnte die Gleichung nicht lesen. Format: <b>k*a^x +/- m = c</b> (z. B. 3*2^x=48)</p>';return;}
+  out.innerHTML=stepperHTML(r.steps,r.ans);
+}
+let loeserReady=false;
+function initLoeser(){
+  if(loeserReady)return;loeserReady=true;
+  document.getElementById('solveBtn').onclick=()=>runSolve(document.getElementById('eqIn').value);
+  document.getElementById('eqIn').addEventListener('keydown',e=>{if(e.key==='Enter')runSolve(e.target.value);});
+  document.getElementById('eqEx').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;document.getElementById('eqIn').value=c.dataset.q;runSolve(c.dataset.q);});
+}
+
+// ===== Drucken =====
+(function(){const p=document.getElementById('printBtn');if(p)p.onclick=()=>window.print();})();
+
+initStart();
 </script>
 </body>
 </html>
