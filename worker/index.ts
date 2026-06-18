@@ -775,7 +775,16 @@ app.post("/calculations", async (c) => {
 
 app.put("/calculations/:id", async (c) => {
   const id = Number(c.req.param("id"));
+  try {
   const p = await c.req.json<CalcPayload>();
+  if (!p?.data) return c.json({ error: "Keine Daten" }, 400);
+  if (!p.data.works) p.data.works = [];
+  if (!p.data.materials) p.data.materials = [];
+  if (!p.data.externals) p.data.externals = [];
+  if (!p.data.shipping) p.data.shipping = [];
+  const row = await c.env.DB.prepare(
+    "SELECT id, title, status FROM calculations WHERE id = ?"
+  ).bind(id).first<{ id: number; title: string; status: string }>();
   const r = await computeTotals(c.env.DB, p.data);
   await c.env.DB.prepare(
     `UPDATE calculations SET
@@ -833,6 +842,10 @@ app.put("/calculations/:id", async (c) => {
     })());
   }
   return c.json({ ok: true });
+  } catch(err: any) {
+    console.error("PUT calc error:", err);
+    return c.json({ error: String(err) }, 500);
+  }
 });
 
 // Neue Version: Kopie mit version = max + 1 innerhalb der Versionsfamilie
