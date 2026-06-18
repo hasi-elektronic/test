@@ -128,6 +128,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:24px 0 8px}
   <button class="tab" data-t="log">⑦ Logarithmus</button>
   <button class="tab" data-t="gleich">⑧ Gleichungen</button>
   <button class="tab" data-t="quiz">🎯 Quiz</button>
+  <button class="tab" data-t="ueben">🧠 Üben</button>
 </div></div></nav>
 
 <div class="wrap">
@@ -401,6 +402,66 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:24px 0 8px}
   </div>
 </section>
 
+<!-- ÜBEN -->
+<style>
+.flashcard{background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:20px;min-height:120px}
+.flashcard .topic{font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:1px}
+.flashcard .box{float:right;font-size:11px;color:var(--muted);text-transform:none;letter-spacing:0}
+.flashcard .qtext{font-size:19px;font-weight:700;margin:14px 0 4px;line-height:1.4}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btnrow button{flex:1;min-width:88px;border:none;border-radius:12px;padding:13px 8px;font-weight:700;font-size:14px;cursor:pointer;color:#fff;transition:.12s}
+.btnrow button:active{transform:scale(.96)}
+.b-unsure{background:#475569}.b-mid{background:#b45309}.b-sure{background:#15803d}
+.b-again{background:var(--red)}.b-known{background:var(--green);color:#06281c}
+.ansbox{margin-top:16px;border-top:1px dashed var(--line);padding-top:14px;display:none}
+.ansbox.show{display:block;animation:fade .2s}
+.ansbox .res{color:var(--green);font-weight:700;font-size:16px;margin-bottom:8px}
+.boxstats{display:flex;gap:6px;margin-top:8px}
+.boxstats .bb{flex:1;text-align:center;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:7px 2px;font-size:10.5px;color:var(--muted)}
+.boxstats .bb b{display:block;font-size:16px;color:var(--accent2)}
+.sessstat{font-size:12.5px;color:var(--muted);margin-top:10px;text-align:center}
+</style>
+<section id="ueben">
+  <h2 class="sec">🧠 Üben mit System</h2>
+  <p class="sub">Aktives Abrufen + Wiederholung mit Köpfchen. So bleibt es wirklich im Kopf.</p>
+
+  <div class="card">
+    <h3>🔬 Warum diese Methode wirkt</h3>
+    <ul class="list">
+      <li><b>Active Recall:</b> erst selbst denken, dann Lösung aufdecken (nicht nur lesen!)</li>
+      <li><b>Spaced Repetition:</b> Schwere Karten kommen öfter, leichte seltener (Box 1→5)</li>
+      <li><b>Interleaving:</b> Themen gemischt – wie in der echten KA</li>
+      <li><b>Selbsteinschätzung:</b> erst Sicherheit angeben, dann prüfen</li>
+    </ul>
+    <p class="muted" style="font-size:12px;margin-top:6px">Dein Fortschritt wird auf diesem Gerät gespeichert. Ziel: alle Karten in Box 4–5.</p>
+  </div>
+
+  <div class="tr">🇹🇷 <b>Nasıl çalışmalı:</b> Soruyu oku, kafanda çöz, sonra ne kadar emin olduğunu seç → cevap açılır. Doğru bildiysen <b>„Gewusst"</b> (kart bir üst kutuya çıkar), bilemediysen <b>„Nochmal"</b> (kart 1. kutuya döner). Zor kartlar daha sık gelir. Hedef: tüm kartları Box 4–5'e taşımak.</div>
+
+  <div class="card">
+    <h3>Thema wählen</h3>
+    <div class="chips" id="ufilter">
+      <span class="chip active" data-f="alle">🔀 Alle gemischt</span>
+      <span class="chip" data-f="potenz">① Potenz</span>
+      <span class="chip" data-f="wachstum">② Wachstum</span>
+      <span class="chip" data-f="expfun">③ Exp-Funktion</span>
+      <span class="chip" data-f="trafo">⑤ Transform.</span>
+      <span class="chip" data-f="efun">⑥ e & ln</span>
+      <span class="chip" data-f="log">⑦ Logarithmus</span>
+      <span class="chip" data-f="gleich">⑧ Gleichungen</span>
+    </div>
+    <div class="progress" style="margin-top:12px"><div id="masterbar"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+      <span id="mastertxt">0 gemeistert</span>
+      <span id="resetSrs" style="color:var(--red);cursor:pointer;font-weight:600">↺ Fortschritt zurücksetzen</span>
+    </div>
+    <div class="boxstats" id="boxstats"></div>
+  </div>
+
+  <div class="flashcard" id="flash"></div>
+  <div class="sessstat" id="sessstat"></div>
+</section>
+
 <footer>Mit ❤️ gemacht für Zeynep · Viel Erfolg in der KA am 24.06.2026</footer>
 </div>
 
@@ -425,6 +486,7 @@ tabs.addEventListener('click',e=>{
   document.getElementById(b.dataset.t).classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
   if(b.dataset.t==='graph')draw();
+  if(b.dataset.t==='ueben')initUeben();
 });
 
 // ---- Log-Rechner ----
@@ -553,6 +615,123 @@ quiz.forEach((item,i)=>{
   });
   qb.appendChild(div);
 });
+
+// ---- Üben: Active Recall + Spaced Repetition (Leitner) ----
+const BANK=[
+  // ① Potenzgesetze
+  {id:'p1',topic:'potenz',q:'Vereinfache: 3⁴ · 3²',a:'3⁶ = 729',steps:['Gleiche Basis · → Exponenten addieren','3^(4+2) = 3⁶ = 729']},
+  {id:'p2',topic:'potenz',q:'Vereinfache: 10⁸ : 10⁵',a:'10³ = 1000',steps:['Gleiche Basis : → Exponenten subtrahieren','10^(8−5) = 10³']},
+  {id:'p3',topic:'potenz',q:'Vereinfache: (2³)²',a:'2⁶ = 64',steps:['Potenz hoch Potenz → multiplizieren','2^(3·2) = 2⁶']},
+  {id:'p4',topic:'potenz',q:'Berechne: 5⁻²',a:'1/25 = 0,04',steps:['a⁻ⁿ = 1/aⁿ','1/5² = 1/25']},
+  {id:'p5',topic:'potenz',q:'Vereinfache: a⁵ · a⁻³',a:'a²',steps:['Exponenten addieren','5 + (−3) = 2']},
+  {id:'p6',topic:'potenz',q:'Schreibe ohne Klammer: (x·y)³',a:'x³ · y³',steps:['(a·b)ⁿ = aⁿ · bⁿ']},
+  // ② Wachstum
+  {id:'w1',topic:'wachstum',q:'Linear oder exponentiell? 5, 15, 45, 135',a:'Exponentiell (×3) → f(x)=5·3ˣ',steps:['Quotient konstant: 15/5=3, 45/15=3','Anfangswert b = 5']},
+  {id:'w2',topic:'wachstum',q:'Linear oder exponentiell? 7, 10, 13, 16',a:'Linear (+3)',steps:['Differenz konstant: immer +3']},
+  {id:'w3',topic:'wachstum',q:'Wachstumsfaktor bei +12 % Zunahme?',a:'a = 1,12',steps:['a = 1 + p/100 = 1 + 0,12']},
+  {id:'w4',topic:'wachstum',q:'Wachstumsfaktor bei 25 % Abnahme?',a:'a = 0,75',steps:['a = 1 − p/100 = 1 − 0,25']},
+  {id:'w5',topic:'wachstum',q:'1000 € zu 3 % Zinsen. Wert nach 2 Jahren?',a:'1060,90 €',steps:['1000 · 1,03²','1000 · 1,0609 = 1060,90']},
+  {id:'w6',topic:'wachstum',q:'80 g Stoff, halbiert sich pro Stunde. Nach 3 Stunden?',a:'10 g',steps:['a = 0,5 → 80 · 0,5³','80 · 0,125 = 10']},
+  // ③ Exp-Funktion
+  {id:'e1',topic:'expfun',q:'f(x)=4·3ˣ. Anfangswert und f(2)?',a:'Anfangswert 4, f(2)=36',steps:['b = f(0) = 4','4 · 3² = 4 · 9 = 36']},
+  {id:'e2',topic:'expfun',q:'f(x)=2·5ˣ. Berechne f(0) und f(1).',a:'f(0)=2, f(1)=10',steps:['2 · 5⁰ = 2','2 · 5¹ = 10']},
+  {id:'e3',topic:'expfun',q:'Graph durch (0|3) und (1|6). Funktionsgleichung?',a:'f(x) = 3·2ˣ',steps:['b = f(0) = 3','a = 6/3 = 2']},
+  {id:'e4',topic:'expfun',q:'f(x)=100·0,5ˣ — steigend oder fallend?',a:'Fallend',steps:['0 < a < 1 → streng monoton fallend']},
+  {id:'e5',topic:'expfun',q:'Asymptote von f(x)=2ˣ+3?',a:'y = 3',steps:['+3 verschiebt 3 nach oben','Asymptote y=0 wird zu y=3']},
+  // ⑤ Transformation
+  {id:'t1',topic:'trafo',q:'Wie entsteht 2ˣ − 4 aus 2ˣ?',a:'4 nach unten (Asymptote y=−4)',steps:['−c außen → senkrecht nach unten']},
+  {id:'t2',topic:'trafo',q:'Wie entsteht 2^(x−2) aus 2ˣ?',a:'2 nach rechts',steps:['c im Exponenten → waagerecht, andersrum','x−2 → nach rechts']},
+  {id:'t3',topic:'trafo',q:'Wie entsteht 3·2ˣ aus 2ˣ?',a:'In y-Richtung gestreckt (×3)',steps:['Faktor außen → senkrechte Streckung']},
+  {id:'t4',topic:'trafo',q:'Wie entsteht 2^(−x) aus 2ˣ?',a:'Spiegelung an der y-Achse',steps:['−x innen → waagerechte Spiegelung']},
+  {id:'t5',topic:'trafo',q:'Wie entsteht −eˣ aus eˣ?',a:'Spiegelung an der x-Achse',steps:['Minus außen (·(−1)) → senkrechte Spiegelung']},
+  // ⑥ e & ln
+  {id:'n1',topic:'efun',q:'Ungefährer Wert der Euler’schen Zahl e?',a:'≈ 2,72',steps:['e ≈ 2,71828…']},
+  {id:'n2',topic:'efun',q:'Berechne ln(1).',a:'0',steps:['e⁰ = 1 → ln(1) = 0']},
+  {id:'n3',topic:'efun',q:'Berechne ln(e³).',a:'3',steps:['ln(eˣ) = x']},
+  {id:'n4',topic:'efun',q:'Berechne e^(ln5).',a:'5',steps:['e^(ln x) = x (heben sich auf)']},
+  {id:'n5',topic:'efun',q:'f(x)=e^(−x) — steigend oder fallend?',a:'Fallend',steps:['−x spiegelt eˣ an y-Achse → fällt']},
+  // ⑦ Logarithmus
+  {id:'l1',topic:'log',q:'Berechne log₂(32).',a:'5',steps:['Welche Hochzahl von 2 ergibt 32?','2⁵ = 32']},
+  {id:'l2',topic:'log',q:'Berechne log₁₀(1000).',a:'3',steps:['10³ = 1000']},
+  {id:'l3',topic:'log',q:'Berechne log₅(1).',a:'0',steps:['5⁰ = 1 → log von 1 ist immer 0']},
+  {id:'l4',topic:'log',q:'Vereinfache: log(4) + log(25)  (Basis 10)',a:'2',steps:['log(4·25) = log(100)','10² = 100 → 2']},
+  {id:'l5',topic:'log',q:'Vereinfache: log(1000) − log(10)',a:'2',steps:['log(1000/10) = log(100) = 2']},
+  {id:'l6',topic:'log',q:'Berechne log₃(9⁴).',a:'8',steps:['log(uʳ) = r·log u → 4·log₃9','log₃9 = 2 → 4·2 = 8']},
+  {id:'l7',topic:'log',q:'Schreibe als ein log: 2·log(x) + log(y)',a:'log(x²·y)',steps:['2·log x = log x²','log x² + log y = log(x²·y)']},
+  // ⑧ Gleichungen
+  {id:'g1',topic:'gleich',q:'Löse: 2ˣ = 32',a:'x = 5',steps:['32 = 2⁵ → x = 5']},
+  {id:'g2',topic:'gleich',q:'Löse: 3·2ˣ = 24',a:'x = 3',steps:['2ˣ = 8','8 = 2³ → x = 3']},
+  {id:'g3',topic:'gleich',q:'Löse: eˣ = 1',a:'x = 0',steps:['e⁰ = 1']},
+  {id:'g4',topic:'gleich',q:'Löse: 10ˣ = 1000',a:'x = 3',steps:['1000 = 10³']},
+  {id:'g5',topic:'gleich',q:'Löse (Ausklammern): 5ˣ·x − 5ˣ = 0',a:'x = 1',steps:['5ˣ·(x−1) = 0','5ˣ ≠ 0 → x−1 = 0']},
+  {id:'g6',topic:'gleich',q:'Löse (Substitution): e^(2x) − 4eˣ + 3 = 0',a:'x = 0 oder x = ln3',steps:['u = eˣ: u² − 4u + 3 = 0','u = 1 oder u = 3','eˣ=1 → x=0 ; eˣ=3 → x=ln3']},
+];
+const TNAMES={potenz:'Potenzgesetze',wachstum:'Wachstum',expfun:'Exp-Funktion',trafo:'Transformation',efun:'e & ln',log:'Logarithmus',gleich:'Gleichungen'};
+const SRSKEY='zmt_srs_v1';
+let srs=JSON.parse(localStorage.getItem(SRSKEY)||'{}');
+let ufilter='alle',current=null,lastId=null,uebenReady=false;
+let session={done:0,known:0,again:0};
+function saveSRS(){localStorage.setItem(SRSKEY,JSON.stringify(srs));}
+function boxOf(id){return (srs[id]&&srs[id].box)||1;}
+function uPool(){return BANK.filter(c=>ufilter==='alle'||c.topic===ufilter);}
+function pickNext(){
+  const p=uPool();if(!p.length)return null;
+  const minB=Math.min(...p.map(c=>boxOf(c.id)));
+  let cands=p.filter(c=>boxOf(c.id)===minB&&c.id!==lastId);
+  if(!cands.length)cands=p.filter(c=>boxOf(c.id)===minB);
+  return cands[Math.floor(Math.random()*cands.length)];
+}
+function renderCard(){
+  current=pickNext();
+  const el=document.getElementById('flash');
+  if(!current){el.innerHTML='<p class="muted">Keine Karten in diesem Thema.</p>';return;}
+  el.innerHTML=`<div class="topic">${TNAMES[current.topic]} <span class="box">📦 Box ${boxOf(current.id)}/5</span></div>
+    <div class="qtext">${current.q}</div>
+    <div id="confrow" class="btnrow">
+      <button class="b-unsure" data-c="1">😟 Unsicher</button>
+      <button class="b-mid" data-c="2">🤔 Mittel</button>
+      <button class="b-sure" data-c="3">😎 Sicher</button>
+    </div>
+    <div class="ansbox" id="ansbox">
+      <div class="res">✅ ${current.a}</div>
+      ${current.steps.map(s=>`<div class="step">→ ${s}</div>`).join('')}
+      <div class="btnrow" style="margin-top:16px">
+        <button class="b-again" data-g="again">🔁 Nochmal</button>
+        <button class="b-known" data-g="known">✅ Gewusst</button>
+      </div>
+    </div>`;
+  document.querySelectorAll('#confrow button').forEach(b=>b.onclick=()=>{
+    document.getElementById('ansbox').classList.add('show');
+    const cr=document.getElementById('confrow');cr.style.opacity=.45;cr.style.pointerEvents='none';
+  });
+  document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>gradeCard(b.dataset.g));
+}
+function gradeCard(g){
+  const id=current.id;if(!srs[id])srs[id]={box:1};
+  srs[id].box = g==='known' ? Math.min(5,boxOf(id)+1) : 1;
+  srs[id].last=Date.now();
+  session.done++; g==='known'?session.known++:session.again++;
+  saveSRS();lastId=id;updStats();renderCard();
+}
+function updStats(){
+  const p=uPool();const counts=[0,0,0,0,0,0];
+  p.forEach(c=>counts[boxOf(c.id)]++);
+  const mastered=p.filter(c=>boxOf(c.id)>=4).length;
+  const pct=p.length?Math.round(mastered/p.length*100):0;
+  document.getElementById('masterbar').style.width=pct+'%';
+  document.getElementById('mastertxt').textContent=`${mastered}/${p.length} gemeistert (${pct}%)`;
+  document.getElementById('boxstats').innerHTML=[1,2,3,4,5].map(i=>`<div class="bb"><b>${counts[i]}</b>Box ${i}</div>`).join('');
+  document.getElementById('sessstat').textContent=`Diese Runde: ${session.done} bearbeitet · ✅ ${session.known} gewusst · 🔁 ${session.again} nochmal`;
+}
+document.getElementById('ufilter').addEventListener('click',e=>{
+  const c=e.target.closest('.chip');if(!c)return;
+  document.querySelectorAll('#ufilter .chip').forEach(x=>x.classList.remove('active'));
+  c.classList.add('active');ufilter=c.dataset.f;lastId=null;updStats();renderCard();
+});
+document.getElementById('resetSrs').addEventListener('click',()=>{
+  if(confirm('Lernfortschritt für ALLE Karten zurücksetzen?')){srs={};saveSRS();session={done:0,known:0,again:0};updStats();renderCard();}
+});
+function initUeben(){if(!uebenReady){uebenReady=true;updStats();renderCard();}}
 </script>
 </body>
 </html>
