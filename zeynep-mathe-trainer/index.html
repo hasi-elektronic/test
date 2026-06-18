@@ -128,6 +128,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:24px 0 8px}
   <button class="tab active" data-t="start">🚀 Start</button>
   <button class="tab" data-t="quiz">🎯 Quiz</button>
   <button class="tab" data-t="ueben">🧠 Üben</button>
+  <button class="tab" data-t="klausur">📝 Probeklausur</button>
+  <button class="tab" data-t="fehler">📕 Fehlerheft</button>
+  <button class="tab" data-t="zuordnen">🔗 Zuordnen</button>
   <button class="tab" data-t="potenz">① Potenzgesetze</button>
   <button class="tab" data-t="wachstum">② Wachstum</button>
   <button class="tab" data-t="expfun">③ Exp.-Funktion</button>
@@ -469,6 +472,69 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:24px 0 8px}
   <div class="sessstat" id="sessstat"></div>
 </section>
 
+<!-- PROBEKLAUSUR / FEHLERHEFT / ZUORDNEN -->
+<style>
+.bigbtn{width:100%;background:var(--accent);border:none;color:#fff;font-weight:700;font-size:16px;padding:15px;border-radius:14px;cursor:pointer;transition:.12s}
+.bigbtn:hover{filter:brightness(1.08)}.bigbtn:active{transform:scale(.98)}
+.examhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:700;font-size:14px;color:var(--muted)}
+.timer{font-variant-numeric:tabular-nums;font-size:20px;color:var(--accent2);background:var(--bg2);border:1px solid var(--line);padding:5px 14px;border-radius:10px}
+.timer.warn{color:var(--red);border-color:var(--red);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.55}}
+.scorebig{font-size:52px;font-weight:800;color:var(--accent2);line-height:1}
+.note{font-size:18px;font-weight:700;margin-top:6px}
+.optbtn{display:block;width:100%;text-align:left;background:var(--card2);border:1px solid var(--line);color:var(--text);padding:14px 16px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;margin-top:9px;transition:.12s}
+.optbtn:hover:not(:disabled){border-color:var(--accent)}
+.optbtn.correct{background:rgba(52,211,153,.18);border-color:var(--green)}
+.optbtn.wrong{background:rgba(248,113,113,.18);border-color:var(--red)}
+.optbtn:disabled{cursor:default}
+.fcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+.fcard .fq{font-weight:600;margin-bottom:6px;padding-right:90px}
+.fcard .fdone{float:right;font-size:12px;color:var(--green);cursor:pointer;font-weight:700;border:1px solid var(--green);border-radius:999px;padding:3px 9px}
+</style>
+
+<section id="klausur">
+  <h2 class="sec">📝 Probeklausur</h2>
+  <p class="sub">Wie in der echten KA: Die Zeit läuft, am Ende gibt's eine Note.</p>
+  <div id="klausurIntro">
+    <div class="card">
+      <h3>Bereit, Zeynep?</h3>
+      <p>Du bekommst zufällige Aufgaben aus <b>allen Themen gemischt</b>. Rechne auf Papier, dann „Lösung zeigen" und ehrlich „Richtig/Falsch" tippen. Ca. 2 Minuten pro Aufgabe.</p>
+      <div class="chips" id="klen">
+        <span class="chip active" data-n="10">10 Aufgaben · 20 min</span>
+        <span class="chip" data-n="15">15 Aufgaben · 30 min</span>
+        <span class="chip" data-n="20">20 Aufgaben · 40 min</span>
+      </div>
+      <button class="bigbtn" id="startKlausur" style="margin-top:14px">▶ Probeklausur starten</button>
+    </div>
+    <div class="tr">🇹🇷 <b>Türkçe:</b> Gerçek sınav provası. Süre işliyor, kağıt-kalemle çöz, sonra cevaba bak ve dürüstçe „Richtig" (doğru) / „Falsch" (yanlış) işaretle. Sonunda puan + not + zayıf konular çıkar. Yanlışların otomatik Fehlerheft'e gider.</div>
+  </div>
+  <div id="klausurRun" style="display:none">
+    <div class="examhead"><span id="kprog">Aufgabe 1</span><span class="timer" id="ktimer">20:00</span></div>
+    <div class="progress"><div id="kbar"></div></div>
+    <div class="flashcard" id="kcard" style="margin-top:10px"></div>
+  </div>
+  <div id="klausurResult" style="display:none"></div>
+</section>
+
+<section id="fehler">
+  <h2 class="sec">📕 Mein Fehlerheft</h2>
+  <p class="sub">Alle Aufgaben, die du falsch hattest – gezielt wiederholen statt alles nochmal.</p>
+  <div class="card" id="fehlerCtrl"></div>
+  <div id="fehlerList"></div>
+</section>
+
+<section id="zuordnen">
+  <h2 class="sec">🔗 Graph zuordnen</h2>
+  <p class="sub">Welche Funktionsgleichung gehört zum gezeigten Graphen?</p>
+  <div class="card">
+    <div style="font-weight:700;color:var(--accent2);margin-bottom:8px" id="zscore">Punkte: 0 · Serie: 0 🔥</div>
+    <canvas id="zcv" width="700" height="420"></canvas>
+    <div id="zopts" style="margin-top:12px"></div>
+    <div id="zfeed"></div>
+  </div>
+  <div class="tr">🇹🇷 <b>Türkçe:</b> Grafiğe bak — yükseliyor mu düşüyor mu (a&gt;1 mi 0&lt;a&lt;1 mi), y eksenini nerede kesiyor (b), yukarı/aşağı kaymış mı (c)? Doğru denklemi seç. Doğru bildikçe seri (🔥) artar.</div>
+</section>
+
 <div class="pager">
   <button class="pv" id="prevBtn">←</button>
   <button class="nx" id="nextBtn">→</button>
@@ -496,6 +562,9 @@ function switchTab(name){
   window.scrollTo({top:0,behavior:'smooth'});
   if(name==='graph')draw();
   if(name==='ueben')initUeben();
+  if(name==='klausur')initKlausur();
+  if(name==='fehler')renderFehler();
+  if(name==='zuordnen')initZuordnen();
   updatePager(name);
 }
 document.getElementById('tabs').addEventListener('click',e=>{
@@ -789,6 +858,7 @@ function gradeCard(g){
   srs[id].box = g==='known' ? Math.min(5,boxOf(id)+1) : 1;
   srs[id].last=Date.now();
   session.done++; g==='known'?session.known++:session.again++;
+  g==='known' ? removeMistake(id) : addMistake(current);
   saveSRS();lastId=id;updStats();renderCard();
 }
 function updStats(){
@@ -810,6 +880,152 @@ document.getElementById('resetSrs').addEventListener('click',()=>{
   if(confirm('Lernfortschritt für ALLE Karten zurücksetzen?')){srs={};saveSRS();session={done:0,known:0,again:0};updStats();renderCard();}
 });
 function initUeben(){if(!uebenReady){uebenReady=true;updStats();renderCard();}}
+
+// ===== Shared Fehlerheft store =====
+const MISTKEY='zmt_mistakes_v1';
+function getMistakes(){return JSON.parse(localStorage.getItem(MISTKEY)||'[]');}
+function saveMistakes(a){localStorage.setItem(MISTKEY,JSON.stringify(a));}
+function addMistake(card){const a=getMistakes();if(card&&!a.includes(card.id)){a.push(card.id);saveMistakes(a);}}
+function removeMistake(id){saveMistakes(getMistakes().filter(x=>x!==id));}
+function byId(id){return BANK.find(c=>c.id===id);}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+// ===== Fehlerheft view =====
+function renderFehler(){
+  const ids=getMistakes().filter(id=>byId(id));
+  const ctrl=document.getElementById('fehlerCtrl'),list=document.getElementById('fehlerList');
+  if(!ids.length){
+    ctrl.innerHTML='<h3>🎉 Keine Fehler!</h3><p class="muted">Dein Fehlerheft ist leer. Mach eine 📝 Probeklausur oder 🧠 übe – falsch beantwortete Aufgaben landen automatisch hier.</p>';
+    list.innerHTML='';return;
+  }
+  ctrl.innerHTML=`<h3>📕 <b style="color:var(--red)">${ids.length}</b> Aufgabe(n) zum Wiederholen</h3>
+    <p class="muted" style="font-size:13px">Lösung ansehen, verstehen, dann „✓ Verstanden" – die Aufgabe verschwindet.</p>
+    <button class="bigbtn" id="clearFehler" style="background:var(--card2);margin-top:10px">🗑 Alle als verstanden markieren</button>`;
+  list.innerHTML=ids.map(id=>{const c=byId(id);return `<div class="fcard">
+    <span class="fdone" data-done="${id}">✓ Verstanden</span>
+    <div class="fq">${TNAMES[c.topic]}: ${c.q}</div>
+    <div class="res" style="color:var(--green);font-weight:700;margin-bottom:4px">✅ ${c.a}</div>
+    ${c.steps.map(s=>`<div class="step">→ ${s}</div>`).join('')}</div>`;}).join('');
+  document.getElementById('clearFehler').onclick=()=>{if(confirm('Fehlerheft komplett leeren?')){saveMistakes([]);renderFehler();}};
+  list.querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{removeMistake(b.dataset.done);renderFehler();});
+}
+
+// ===== Probeklausur =====
+let kState=null,kTimer=null,kLen=10;
+function initKlausur(){if(!kState||kState.done)showKlausurIntro();}
+function showKlausurIntro(){
+  document.getElementById('klausurIntro').style.display='';
+  document.getElementById('klausurRun').style.display='none';
+  document.getElementById('klausurResult').style.display='none';
+}
+document.getElementById('klen').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;document.querySelectorAll('#klen .chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');kLen=+c.dataset.n;});
+document.getElementById('startKlausur').onclick=startKlausur;
+function startKlausur(){
+  kState={qs:shuffle(BANK).slice(0,kLen),idx:0,correct:0,wrong:{},secs:kLen*120,answered:false,done:false};
+  document.getElementById('klausurIntro').style.display='none';
+  document.getElementById('klausurResult').style.display='none';
+  document.getElementById('klausurRun').style.display='';
+  renderK();
+  clearInterval(kTimer);
+  kTimer=setInterval(()=>{
+    if(!kState||kState.done){clearInterval(kTimer);return;}
+    kState.secs--;
+    const t=document.getElementById('ktimer'),m=Math.floor(kState.secs/60),s=kState.secs%60;
+    t.textContent=m+':'+(''+s).padStart(2,'0');
+    t.classList.toggle('warn',kState.secs<=60);
+    if(kState.secs<=0){clearInterval(kTimer);finishKlausur();}
+  },1000);
+}
+function renderK(){
+  const c=kState.qs[kState.idx];kState.answered=false;
+  document.getElementById('kprog').textContent='Aufgabe '+(kState.idx+1)+'/'+kState.qs.length;
+  document.getElementById('kbar').style.width=Math.round(kState.idx/kState.qs.length*100)+'%';
+  document.getElementById('kcard').innerHTML=`<div class="topic">${TNAMES[c.topic]}</div>
+    <div class="qtext">${c.q}</div>
+    <button class="bigbtn" id="kshow">Lösung zeigen</button>
+    <div class="ansbox" id="kans">
+      <div class="res">✅ ${c.a}</div>
+      ${c.steps.map(s=>`<div class="step">→ ${s}</div>`).join('')}
+      <div class="btnrow" style="margin-top:14px">
+        <button class="b-again" data-k="0">❌ Falsch</button>
+        <button class="b-known" data-k="1">✅ Richtig</button>
+      </div></div>`;
+  document.getElementById('kshow').onclick=()=>document.getElementById('kans').classList.add('show');
+  document.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>markK(+b.dataset.k,c));
+}
+function markK(ok,c){
+  if(kState.answered)return;kState.answered=true;
+  if(ok){kState.correct++;removeMistake(c.id);}
+  else{kState.wrong[c.topic]=(kState.wrong[c.topic]||0)+1;addMistake(c);}
+  kState.idx++;
+  if(kState.idx>=kState.qs.length)finishKlausur();else renderK();
+}
+function finishKlausur(){
+  clearInterval(kTimer);if(!kState)return;kState.done=true;
+  const tot=kState.qs.length,cor=kState.correct,pct=Math.round(cor/tot*100);
+  let note='6';if(pct>=92)note='1';else if(pct>=81)note='2';else if(pct>=67)note='3';else if(pct>=50)note='4';else if(pct>=30)note='5';
+  const weak=Object.entries(kState.wrong).sort((a,b)=>b[1]-a[1]).map(([t,n])=>TNAMES[t]+' ('+n+')');
+  document.getElementById('klausurRun').style.display='none';
+  const r=document.getElementById('klausurResult');r.style.display='';
+  r.innerHTML=`<div class="card" style="text-align:center">
+      <div class="scorebig">${cor}/${tot}</div>
+      <div class="note">Note ${note} · ${pct}% richtig</div>
+      <div class="progress" style="margin:16px 0"><div style="width:${pct}%"></div></div>
+      ${weak.length?'<p class="muted">Schwächste Themen: <b style="color:var(--amber)">'+weak.join(', ')+'</b></p><p class="muted" style="font-size:13px;margin-top:6px">Deine Fehler sind im 📕 Fehlerheft gespeichert.</p>':'<p style="color:var(--green);font-weight:700">Perfekt – keine Fehler! 🎉</p>'}
+      <button class="bigbtn" id="kagain" style="margin-top:16px">🔁 Neue Probeklausur</button>
+    </div>`;
+  document.getElementById('kagain').onclick=()=>{kState=null;showKlausurIntro();};
+}
+
+// ===== Graph-Zuordnen =====
+let zScore=0,zStreak=0,zAns=null,zStarted=false;
+function zFmt(n){return Number.isInteger(n)?n:(''+n).replace('.',',');}
+function zLabel(p){const a=zFmt(p.a),b=zFmt(p.b);
+  if(p.mode==='shift')return 'f(x)='+b+'·'+a+'ˣ '+(p.c>=0?'+ '+p.c:'− '+(-p.c));
+  if(p.mode==='refl')return 'f(x)='+b+'·'+a+'^(−x)';
+  return 'f(x)='+b+'·'+a+'ˣ';}
+function zEval(p,x){if(p.mode==='shift')return p.b*Math.pow(p.a,x)+p.c;if(p.mode==='refl')return p.b*Math.pow(p.a,-x);return p.b*Math.pow(p.a,x);}
+function zDraw(p){
+  const cv=document.getElementById('zcv'),ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,ox=W/2,oy=H/2,sc=40;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c2348';ctx.lineWidth=1;
+  for(let g=-8;g<=8;g++){ctx.beginPath();ctx.moveTo(ox+g*sc,0);ctx.lineTo(ox+g*sc,H);ctx.stroke();}
+  for(let g=-5;g<=5;g++){ctx.beginPath();ctx.moveTo(0,oy+g*sc);ctx.lineTo(W,oy+g*sc);ctx.stroke();}
+  ctx.strokeStyle='#5b6699';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,oy);ctx.lineTo(W,oy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ox,0);ctx.lineTo(ox,H);ctx.stroke();
+  ctx.fillStyle='#a7b0d8';ctx.font='12px Inter';ctx.fillText('1',ox+sc-3,oy+16);ctx.fillText('1',ox+6,oy-sc+4);
+  ctx.strokeStyle='#22d3ee';ctx.lineWidth=3;ctx.beginPath();let st=false;
+  for(let px=0;px<=W;px++){const x=(px-ox)/sc,y=zEval(p,x),py=oy-y*sc;if(py<-2000||py>H+2000){st=false;continue;}if(!st){ctx.moveTo(px,py);st=true;}else ctx.lineTo(px,py);}
+  ctx.stroke();
+}
+function zGen(){
+  const as=[2,3,0.5],bs=[1,2,3],cs=[2,3,-2],modes=['base','base','shift','refl'];
+  const mk=()=>({a:as[Math.floor(Math.random()*3)],b:bs[Math.floor(Math.random()*3)],c:cs[Math.floor(Math.random()*3)],mode:modes[Math.floor(Math.random()*4)]});
+  const correct=mk(),opts=[correct];let guard=0;
+  while(opts.length<3&&guard++<60){const d=mk();if(!opts.some(o=>zLabel(o)===zLabel(d)))opts.push(d);}
+  return {correct,opts:shuffle(opts)};
+}
+function initZuordnen(){if(!zStarted){zStarted=true;newZ();}}
+function newZ(){
+  const {correct,opts}=zGen();zAns=correct;const ci=opts.indexOf(correct);
+  zDraw(correct);
+  document.getElementById('zfeed').innerHTML='';
+  document.getElementById('zscore').textContent='Punkte: '+zScore+' · Serie: '+zStreak+' 🔥';
+  const box=document.getElementById('zopts');
+  box.innerHTML=opts.map((o,i)=>'<button class="optbtn" data-i="'+i+'">'+String.fromCharCode(65+i)+') '+zLabel(o)+'</button>').join('');
+  box.querySelectorAll('.optbtn').forEach((b,i)=>b.onclick=()=>zPick(i,ci,box));
+}
+function zPick(i,ci,box){
+  const btns=[...box.querySelectorAll('.optbtn')];btns.forEach(b=>b.disabled=true);
+  btns[ci].classList.add('correct');
+  const ok=i===ci;
+  if(ok){zScore++;zStreak++;}else{btns[i].classList.add('wrong');zStreak=0;}
+  document.getElementById('zscore').textContent='Punkte: '+zScore+' · Serie: '+zStreak+' 🔥';
+  document.getElementById('zfeed').innerHTML='<div class="card" style="margin-top:12px">'+(ok?'<b style="color:var(--green)">✅ Richtig!</b>':'<b style="color:var(--red)">❌ Leider falsch.</b> Richtig: <b>'+zLabel(zAns)+'</b>')+'<button class="bigbtn" id="znext" style="margin-top:12px">Nächster Graph →</button></div>';
+  document.getElementById('znext').onclick=newZ;
+}
 </script>
 </body>
 </html>
