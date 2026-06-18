@@ -43,6 +43,11 @@ export default function LoginPage() {
           <Button type="submit" disabled={busy} className="w-full py-2.5">
             {busy ? "Anmelden…" : "Anmelden"}
           </Button>
+          <div className="text-center">
+            <a href="/reset-password" className="text-xs text-slate-400 hover:text-blue-600">
+              Passwort vergessen?
+            </a>
+          </div>
         </form>
       </div>
     </div>
