@@ -264,6 +264,7 @@ export interface CartItem {
   einzel: number;
   customer_name: string;
   drawing_no: string;
+  svgContent?: string; // inline SVG Abwicklung (aus Kalkulation data)
 }
 
 export interface Supplier {
