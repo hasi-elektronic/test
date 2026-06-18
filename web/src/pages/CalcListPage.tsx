@@ -28,17 +28,30 @@ export default function CalcListPage() {
   const [type, setType] = useState("");
   const [status, setStatus] = useState("");
   const [q, setQ] = useState("");
+  const [sb, setSb] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [myOnly, setMyOnly] = useState(false);
+  const [sbList, setSbList] = useState<{ kuerzel: string; name: string }[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    api.get<{ kuerzel: string; name: string }[]>("/sachbearbeiter").then(setSbList).catch(() => {});
+  }, []);
 
   const load = () => {
     const params = new URLSearchParams();
     if (type) params.set("type", type);
     if (status) params.set("status", status);
     if (q) params.set("q", q);
+    if (sb) params.set("sb", sb);
+    if (dateFrom) params.set("from", dateFrom);
+    if (dateTo) params.set("to", dateTo);
+    if (myOnly) params.set("my", "1");
     api.get<Row[]>(`/calculations?${params}`).then(setRows);
   };
 
-  useEffect(load, [type, status]);
+  useEffect(load, [type, status, sb, myOnly, dateFrom, dateTo]);
 
   const copy = async (id: number) => {
     const res = await api.post<{ id: number }>(`/calculations/${id}/copy`);
@@ -86,6 +99,26 @@ export default function CalcListPage() {
           />
           <Button variant="secondary" onClick={load}>Suchen</Button>
         </div>
+        <div className="w-44">
+          <Select value={sb} onChange={(e) => setSb(e.target.value)}>
+            <option value="">Alle Sachbearbeiter</option>
+            {sbList.map((s) => (
+              <option key={s.kuerzel} value={s.kuerzel}>{s.name}</option>
+            ))}
+          </Select>
+        </div>
+        <div className="flex gap-2 items-center">
+          <TextInput type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+            className="w-36 text-sm" title="Von" />
+          <span className="text-slate-400 text-sm">–</span>
+          <TextInput type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+            className="w-36 text-sm" title="Bis" />
+        </div>
+        <label className="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer select-none">
+          <input type="checkbox" checked={myOnly} onChange={(e) => setMyOnly(e.target.checked)}
+            className="rounded border-slate-300" />
+          Nur meine
+        </label>
       </div>
 
       {!rows ? (
