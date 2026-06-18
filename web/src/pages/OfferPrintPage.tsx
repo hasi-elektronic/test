@@ -141,7 +141,9 @@ export default function OfferPrintPage() {
 
   const confirmAndAction = async (action: () => Promise<void>) => {
     if (!nrConfirmed) {
-      await api.post("/angebot/confirm-nr", { nr: angebotNr }).catch(() => {});
+      // Atomic: Server vergibt die Nummer, wir übernehmen sie
+      const result = await api.post<{ nr: string }>("/angebot/confirm-nr", { nr: angebotNr }).catch(() => null);
+      if (result?.nr) setAngebotNr(result.nr);
       setNrConfirmed(true);
     }
     await action();
