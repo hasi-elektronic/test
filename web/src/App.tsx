@@ -12,6 +12,7 @@ import OfferPrintPage from "./pages/OfferPrintPage";
 import StammdatenPage from "./pages/StammdatenPage";
 import UsersPage from "./pages/UsersPage";
 import SettingsPage from "./pages/SettingsPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 function PasswordModal({ onClose }: { onClose: () => void }) {
   const [oldPw, setOldPw] = useState("");
@@ -128,6 +129,7 @@ export default function App() {
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/" element={<Protected><DashboardPage /></Protected>} />
         <Route path="/kalkulationen" element={<Protected><CalcListPage /></Protected>} />
         <Route path="/kalkulationen/neu" element={<Protected><NewCalcPage /></Protected>} />
