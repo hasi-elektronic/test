@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zeynep Mathe-Trainer · Exponential & Logarithmus</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0f1226; --bg2:#171b38; --card:#1e2347; --card2:#262c57;
+  --line:#323a6b; --text:#f3f5ff; --muted:#a7b0d8;
+  --accent:#5b8cff; --accent2:#22d3ee;
+  --green:#34d399; --amber:#fbbf24; --red:#f87171; --pink:#f472b6; --violet:#a78bfa;
+  --radius:16px;
+}
+html,body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;-webkit-tap-highlight-color:transparent;line-height:1.5}
+body{padding-bottom:90px}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px}
+a{color:var(--accent)}
+
+/* Header */
+header{padding:26px 0 14px;text-align:center}
+.logo{font-size:13px;letter-spacing:3px;color:var(--accent2);font-weight:700;text-transform:uppercase}
+header h1{font-size:26px;font-weight:800;margin-top:4px;letter-spacing:-.5px}
+header p{color:var(--muted);font-size:14px;margin-top:4px}
+.countdown{display:inline-flex;gap:8px;align-items:center;margin-top:12px;background:var(--card);border:1px solid var(--line);padding:8px 14px;border-radius:999px;font-size:14px;font-weight:600}
+.countdown b{color:var(--accent2);font-size:18px}
+
+/* Tabs */
+nav{position:sticky;top:0;z-index:30;background:rgba(15,18,38,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);margin:14px -16px 0;padding:10px 16px}
+.tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;background:var(--card);border:1px solid var(--line);color:var(--muted);padding:9px 14px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;transition:.15s}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* Sections */
+section{display:none;padding:18px 0 10px;animation:fade .25s}
+section.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h2.sec{font-size:21px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.sub{color:var(--muted);font-size:14px;margin-bottom:14px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.card h3{font-size:16px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.card p{color:#dfe4ff;font-size:14.5px;margin-bottom:6px}
+.muted{color:var(--muted)}
+.formula{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:17px;text-align:center;margin:8px 0;font-weight:600;letter-spacing:.3px}
+.formula small{color:var(--muted);font-weight:500;font-size:12px}
+.tr{color:var(--amber);font-size:13.5px;background:rgba(251,191,36,.08);border-left:3px solid var(--amber);padding:8px 12px;border-radius:8px;margin:8px 0}
+.tr b{color:var(--amber)}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--card2);color:var(--accent2);border:1px solid var(--line)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+.mini{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px}
+.mini .k{font-size:12px;color:var(--muted)}
+.mini .v{font-size:16px;font-weight:700;margin-top:2px}
+ul.list{list-style:none;margin:6px 0}
+ul.list li{padding:6px 0 6px 24px;position:relative;font-size:14.5px;color:#dfe4ff;border-bottom:1px solid var(--line)}
+ul.list li:last-child{border-bottom:none}
+ul.list li::before{content:"▸";position:absolute;left:4px;color:var(--accent2)}
+.ok::before{content:"✓"!important;color:var(--green)!important}
+.no::before{content:"✗"!important;color:var(--red)!important}
+
+/* Interactive graph */
+.graphbox{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px}
+canvas{width:100%;height:auto;display:block;border-radius:10px;background:#0b0e22;touch-action:none}
+.sliders{margin-top:12px;display:grid;gap:12px}
+.slrow{display:grid;grid-template-columns:120px 1fr 56px;align-items:center;gap:10px}
+@media(max-width:520px){.slrow{grid-template-columns:96px 1fr 48px}}
+.slrow label{font-size:13px;font-weight:600;color:var(--muted)}
+.slrow .val{font-weight:700;color:var(--accent2);text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;height:6px;border-radius:6px;background:var(--line);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:3px solid #fff}
+.eq{text-align:center;font-size:18px;font-weight:800;margin:10px 0 2px;color:var(--text)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{background:var(--card2);border:1px solid var(--line);color:var(--muted);font-size:12.5px;font-weight:600;padding:7px 11px;border-radius:999px;cursor:pointer}
+.chip.active{background:var(--violet);border-color:var(--violet);color:#fff}
+.readout{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.readout .pill{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12.5px}
+.readout .pill b{color:var(--accent2)}
+
+/* Quiz */
+.q{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.q .qhead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.q .qnum{font-size:12px;font-weight:700;color:var(--accent2)}
+.q .qtext{font-size:15.5px;font-weight:600;margin:6px 0 10px}
+.q .reveal{background:var(--accent);border:none;color:#fff;font-weight:700;font-size:13px;padding:9px 14px;border-radius:10px;cursor:pointer}
+.q .ans{display:none;margin-top:12px;border-top:1px dashed var(--line);padding-top:12px;font-size:14px;color:#dfe4ff}
+.q.show .ans{display:block;animation:fade .2s}
+.q .ans .res{color:var(--green);font-weight:700;font-size:15px;margin-bottom:6px}
+.step{font-variant-numeric:tabular-nums;color:#cfd6ff;padding:2px 0}
+
+/* Calculator */
+.calc{display:grid;gap:10px}
+.calc .ci{display:flex;gap:8px;align-items:center}
+.calc input[type=number]{flex:1;background:var(--bg2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px;font-size:15px;font-weight:600}
+.calc .lab{font-size:13px;color:var(--muted);min-width:96px}
+.calc .out{background:var(--bg2);border:1px solid var(--accent);border-radius:10px;padding:12px;text-align:center;font-size:17px;font-weight:800;color:var(--accent2)}
+
+footer{text-align:center;color:var(--muted);font-size:12px;padding:24px 0 8px}
+.plan-day{display:flex;gap:12px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:8px}
+.plan-day .d{font-size:12px;font-weight:800;color:#fff;background:var(--accent);min-width:62px;text-align:center;padding:6px 4px;border-radius:8px}
+.plan-day .t{font-size:14px;flex:1}
+.plan-day .h{font-size:12px;color:var(--muted);font-weight:700}
+.progress{height:8px;background:var(--line);border-radius:8px;overflow:hidden;margin:8px 0 4px}
+.progress>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:.4s}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="logo">WGI 11/1 · Mathematik</div>
+  <h1>Zeynep Mathe-Trainer 📈</h1>
+  <p>Exponentialfunktionen & Logarithmen · Klassenarbeit</p>
+  <div class="countdown">⏳ Noch <b id="days">–</b> Tage bis zur KA (24.06.2026)</div>
+</header>
+</div>
+
+<nav><div class="wrap"><div class="tabs" id="tabs">
+  <button class="tab active" data-t="start">🚀 Start</button>
+  <button class="tab" data-t="potenz">① Potenzgesetze</button>
+  <button class="tab" data-t="wachstum">② Wachstum</button>
+  <button class="tab" data-t="expfun">③ Exp.-Funktion</button>
+  <button class="tab" data-t="graph">④ Graph (live)</button>
+  <button class="tab" data-t="trafo">⑤ Transformation</button>
+  <button class="tab" data-t="efun">⑥ e & ln</button>
+  <button class="tab" data-t="log">⑦ Logarithmus</button>
+  <button class="tab" data-t="gleich">⑧ Gleichungen</button>
+  <button class="tab" data-t="quiz">🎯 Quiz</button>
+</div></div></nav>
+
+<div class="wrap">
+
+<!-- START -->
+<section class="active" id="start">
+  <h2 class="sec">🚀 Los geht's, Zeynep!</h2>
+  <p class="sub">Keine Panik. Diese Themen sind logisch – wenn du sie verstehst, ist die KA gut machbar.</p>
+  <div class="card">
+    <h3>📅 Dein 6-Tage-Plan</h3>
+    <div class="plan-day"><div class="d">Tag 1</div><div class="t">Potenzgesetze (3 Regeln + 15 Aufgaben)</div><div class="h">1 Std</div></div>
+    <div class="plan-day"><div class="d">Tag 2</div><div class="t">Lineares vs. exponentielles Wachstum</div><div class="h">1 Std</div></div>
+    <div class="plan-day"><div class="d">Tag 3</div><div class="t">Exp.-Funktion f(x)=b·aˣ + Graph ablesen</div><div class="h">1,5 Std</div></div>
+    <div class="plan-day"><div class="d">Tag 4</div><div class="t">Transformationen + e-Funktion & ln</div><div class="h">1,5 Std</div></div>
+    <div class="plan-day"><div class="d">Tag 5</div><div class="t">Logarithmus + Logarithmusgesetze</div><div class="h">1,5 Std</div></div>
+    <div class="plan-day"><div class="d">Tag 6</div><div class="t">Exp.-Gleichungen + gemischtes Quiz</div><div class="h">1,5 Std</div></div>
+    <div class="progress"><div id="planbar"></div></div>
+    <p class="muted" style="font-size:12px">Gesamt ≈ 8 Stunden. Jeden Tag: lesen → 2 Aufgaben rechnen → Fehler notieren.</p>
+  </div>
+  <div class="tr">🇹🇷 <b>Anne/Baba için not:</b> Zeynep her gün 1 sekme (tab) bitirsin ve o konudan en az 2 soru çözsün. Yanlışları bir deftere yazsın, sınavdan önce sadece yanlışları tekrar etsin. Panik yok – sistematik çalışınca bu konular kolay.</p>
+  <div class="card">
+    <h3>✅ So lernst du richtig</h3>
+    <ul class="list">
+      <li class="ok">Erst verstehen, dann auswendig lernen</li>
+      <li class="ok">Jeden Tag selbst rechnen (nicht nur lesen!)</li>
+      <li class="ok">Fehler aufschreiben & gezielt wiederholen</li>
+      <li class="no">Stundenlang nur durchlesen ohne zu rechnen</li>
+      <li class="no">Erst am letzten Abend anfangen</li>
+    </ul>
+  </div>
+</section>
+
+<!-- POTENZGESETZE -->
+<section id="potenz">
+  <h2 class="sec">① Potenzgesetze <span class="tag">Niveau 1</span></h2>
+  <p class="sub">Das Fundament. Ohne diese Regeln geht nichts.</p>
+  <div class="card">
+    <h3>Die 3 Hauptregeln</h3>
+    <div class="formula">aᵐ · aⁿ = a<sup>m+n</sup><br><small>gleiche Basis mal → Exponenten <b>addieren</b></small></div>
+    <div class="formula">aᵐ : aⁿ = a<sup>m−n</sup><br><small>gleiche Basis geteilt → Exponenten <b>subtrahieren</b></small></div>
+    <div class="formula">(aᵐ)ⁿ = a<sup>m·n</sup><br><small>Potenz hoch Potenz → Exponenten <b>multiplizieren</b></small></div>
+  </div>
+  <div class="card">
+    <h3>Wichtige Spezialfälle</h3>
+    <div class="grid2">
+      <div class="mini"><div class="k">Hoch 0</div><div class="v">a⁰ = 1</div></div>
+      <div class="mini"><div class="k">Negativer Exponent</div><div class="v">a⁻ⁿ = 1/aⁿ</div></div>
+      <div class="mini"><div class="k">Wurzel = Bruch-Exp.</div><div class="v">a<sup>1/n</sup> = ⁿ√a</div></div>
+      <div class="mini"><div class="k">Produkt-Basis</div><div class="v">(a·b)ⁿ = aⁿ·bⁿ</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Beispiele</h3>
+    <p>2³ · 2⁴ = 2⁷ = 128</p>
+    <p>5⁶ : 5² = 5⁴ = 625</p>
+    <p>(3²)³ = 3⁶ = 729</p>
+    <p>2⁻³ = 1/2³ = 1/8 = 0,125</p>
+  </div>
+  <div class="tr">🇹🇷 <b>Türkçe:</b> Aynı tabanı çarparken üsleri topla, bölerken çıkar, üssün üssü varsa çarp. Bu 3 kuralı ezberle, gerisi gelir.</div>
+</section>
+
+<!-- WACHSTUM -->
+<section id="wachstum">
+  <h2 class="sec">② Lineares vs. exponentielles Wachstum</h2>
+  <p class="sub">Erkennen, welches Wachstum vorliegt – und die Gleichung aufstellen.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="color:var(--green)">📏 Linear</h3>
+      <p>In jedem Schritt kommt <b>derselbe Betrag</b> dazu (+).</p>
+      <div class="formula">f(x) = m·x + b</div>
+      <p class="muted">Bsp: jeden Monat +100 € sparen.</p>
+      <p class="muted">0 → 100 → 200 → 300 (immer +100)</p>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--pink)">📈 Exponentiell</h3>
+      <p>In jedem Schritt wird mit <b>demselben Faktor</b> mal-genommen (×).</p>
+      <div class="formula">f(x) = b·aˣ</div>
+      <p class="muted">Bsp: Bakterie verdoppelt sich.</p>
+      <p class="muted">3 → 6 → 12 → 24 (immer ×2)</p>
+    </div>
+  </div>
+  <div class="card">
+    <h3>So erkennst du es (Wertetabelle)</h3>
+    <ul class="list">
+      <li>Differenz immer gleich (+ c) → <b style="color:var(--green)">linear</b></li>
+      <li>Quotient immer gleich (× a) → <b style="color:var(--pink)">exponentiell</b></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Wachstumsfaktor aus Prozent</h3>
+    <div class="grid2">
+      <div class="mini"><div class="k">Zunahme um p %</div><div class="v">a = 1 + p/100</div></div>
+      <div class="mini"><div class="k">Abnahme um p %</div><div class="v">a = 1 − p/100</div></div>
+    </div>
+    <p style="margin-top:8px">+5 % → a = 1,05 · · · −20 % → a = 0,8 · · · +100 % → a = 2</p>
+  </div>
+  <div class="tr">🇹🇷 <b>Türkçe:</b> Her adımda aynı sayı eklenirse <b>doğrusal</b>, aynı sayıyla çarpılırsa <b>üstel</b>. %5 artış → faktör 1,05; %20 azalış → 0,8.</div>
+</section>
+
+<!-- EXP FUNKTION -->
+<section id="expfun">
+  <h2 class="sec">③ Die Exponentialfunktion</h2>
+  <p class="sub">f(x) = b · aˣ — die zwei Bausteine verstehen.</p>
+  <div class="card">
+    <div class="formula" style="font-size:22px">f(x) = b · a<sup>x</sup></div>
+    <div class="grid2" style="margin-top:8px">
+      <div class="mini"><div class="k">b = Anfangswert</div><div class="v">f(0) = b</div><p class="muted" style="font-size:12px;margin-top:4px">Wert bei x = 0 (Schnittpunkt y-Achse)</p></div>
+      <div class="mini"><div class="k">a = Wachstumsfaktor</div><div class="v">a > 0, a ≠ 1</div><p class="muted" style="font-size:12px;margin-top:4px">a&gt;1 wächst · 0&lt;a&lt;1 fällt</p></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Beispiel: f(x) = 3 · 2ˣ</h3>
+    <p class="step">x = 0 → 3 · 2⁰ = 3</p>
+    <p class="step">x = 1 → 3 · 2¹ = 6</p>
+    <p class="step">x = 2 → 3 · 2² = 12</p>
+    <p class="step">x = 3 → 3 · 2³ = 24</p>
+    <p class="muted">Anfangswert 3, verdoppelt sich jedes Mal.</p>
+  </div>
+  <div class="card">
+    <h3>Monotonie · Asymptote · Verhalten</h3>
+    <ul class="list">
+      <li><b>a &gt; 1:</b> streng monoton <b style="color:var(--green)">steigend</b></li>
+      <li><b>0 &lt; a &lt; 1:</b> streng monoton <b style="color:var(--red)">fallend</b></li>
+      <li><b>Asymptote:</b> die x-Achse, also y = 0 (der Graph berührt sie nie)</li>
+      <li><b>Verhalten |x|→∞:</b> auf einer Seite gegen 0, auf der anderen gegen ±∞</li>
+    </ul>
+  </div>
+  <div class="tr">🇹🇷 <b>Türkçe:</b> b = başlangıç değeri (x=0'da çıkan sayı), a = büyüme faktörü. a&gt;1 ise grafik yükselir, 0&lt;a&lt;1 ise alçalır. Grafik y=0 çizgisine değmez (asimptot).</div>
+</section>
+
+<!-- GRAPH LIVE -->
+<section id="graph">
+  <h2 class="sec">④ Graph live ausprobieren</h2>
+  <p class="sub">Schiebe die Regler und sieh, wie sich der Graph ändert. So verstehst du jede Aufgabe.</p>
+  <div class="graphbox">
+    <canvas id="cv" width="700" height="460"></canvas>
+    <div class="eq" id="eq">f(x) = 1 · 2ˣ</div>
+    <div class="chips" id="modes">
+      <span class="chip active" data-m="base">f(x)=b·aˣ</span>
+      <span class="chip" data-m="vshift">+ c (hoch/runter)</span>
+      <span class="chip" data-m="hshift">a<sup>x+c</sup> (links/rechts)</span>
+      <span class="chip" data-m="vstretch">c·b·aˣ (strecken)</span>
+      <span class="chip" data-m="hstretch">a<sup>c·x</sup> (stauchen)</span>
+    </div>
+    <div class="sliders">
+      <div class="slrow"><label>Basis a</label><input type="range" id="sa" min="0.2" max="4" step="0.1" value="2"><div class="val" id="va">2.0</div></div>
+      <div class="slrow"><label>Faktor b</label><input type="range" id="sb" min="-4" max="4" step="0.5" value="1"><div class="val" id="vb">1.0</div></div>
+      <div class="slrow"><label id="lc">Parameter c</label><input type="range" id="sc" min="-3" max="3" step="0.5" value="0"><div class="val" id="vc">0.0</div></div>
+    </div>
+    <div class="readout" id="readout"></div>
+  </div>
+  <div class="tr" style="margin-top:14px">🇹🇷 <b>Türkçe:</b> a'yı büyüt → grafik dikleşir. b işaretini değiştir → grafik x ekseninin altına/üstüne geçer. c ile grafiği kaydır. Asimptot (kesikli çizgi) nereye gidiyor, gör.</div>
+</section>
+
+<!-- TRANSFORMATION -->
+<section id="trafo">
+  <h2 class="sec">⑤ Transformationen</h2>
+  <p class="sub">Wie entsteht der Graph aus f(x) = b·aˣ?</p>
+  <div class="card">
+    <h3>Die 4 Fälle (sehr wichtig!)</h3>
+    <ul class="list">
+      <li><b>f(x) = b·aˣ + c</b> → Graph <b style="color:var(--accent2)">nach oben</b> (c&gt;0) bzw. unten (c&lt;0). Asymptote wird y = c.</li>
+      <li><b>f(x) = b·a<sup>x+c</sup></b> → Graph <b style="color:var(--accent2)">nach links</b> (c&gt;0) bzw. rechts (c&lt;0).</li>
+      <li><b>f(x) = c·b·aˣ</b> → Graph in y-Richtung <b style="color:var(--accent2)">gestreckt</b> (|c|&gt;1) / gestaucht; c&lt;0 spiegelt an x-Achse.</li>
+      <li><b>f(x) = b·a<sup>c·x</sup></b> → Graph in x-Richtung <b style="color:var(--accent2)">gestaucht</b> (|c|&gt;1) / gestreckt; c&lt;0 spiegelt an y-Achse.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Merksatz: innen vs. außen</h3>
+    <p><b>Außen</b> (mit y, also +c oder ·c) = wirkt <b>senkrecht</b> (hoch/runter, strecken) – „so wie man denkt".</p>
+    <p><b>Innen</b> (beim x, also x+c oder c·x) = wirkt <b>waagerecht</b> und <b>genau andersrum</b> als man denkt (x+2 → nach <i>links</i>!).</p>
+  </div>
+  <div class="tr">🇹🇷 <b>Türkçe:</b> Dışarıda (+c) → yukarı/aşağı. İçeride (x+c) → sola/sağa ve <b>ters yönde</b> (x+2 sola gider!). Eksiyle çarpma (·c, c&lt;0) → ayna görüntüsü.</div>
+  <div class="card"><h3>👉 Tipp</h3><p>Probier jeden Fall im Tab <b>„④ Graph live"</b> mit dem Regler „Parameter c" direkt aus!</p></div>
+</section>
+
+<!-- e & ln -->
+<section id="efun">
+  <h2 class="sec">⑥ Euler'sche Zahl e & ln</h2>
+  <p class="sub">Die wichtigste Basis der Mathematik.</p>
+  <div class="card">
+    <h3>Die Zahl e</h3>
+    <div class="formula">e ≈ 2,71828…</div>
+    <p>Eine feste Zahl (wie π). Die Funktion <b>f(x) = eˣ</b> heißt <i>natürliche</i> Exponentialfunktion.</p>
+    <ul class="list">
+      <li>f(x) = eˣ → steigt, geht durch (0|1), Asymptote y = 0</li>
+      <li>f(x) = −eˣ → an der x-Achse gespiegelt</li>
+      <li>f(x) = e<sup>−x</sup> → an der y-Achse gespiegelt (fällt)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Der natürliche Logarithmus ln</h3>
+    <p><b>ln</b> ist die Umkehrung von eˣ. „ln(x) = welche Hochzahl von e ergibt x?"</p>
+    <div class="grid2">
+      <div class="mini"><div class="k">Basis-Werte</div><div class="v">ln(1)=0, ln(e)=1</div></div>
+      <div class="mini"><div class="k">Hebt sich auf</div><div class="v">ln(eˣ)=x, e<sup>ln x</sup>=x</div></div>
+    </div>
+  </div>
+  <div class="tr">🇹🇷 <b>Türkçe:</b> e ≈ 2,72 sabit bir sayı. ln, eˣ'in tersidir. ln(1)=0, ln(e)=1. Üstel denklemlerde her iki tarafa ln uygulayıp x'i yalnız bırakırsın.</div>
+</section>
+
+<!-- LOG -->
+<section id="log">
+  <h2 class="sec">⑦ Logarithmus</h2>
+  <p class="sub">Der Logarithmus ist die Umkehrung des Potenzierens.</p>
+  <div class="card">
+    <h3>Grundidee</h3>
+    <div class="formula">2³ = 8 &nbsp;⟺&nbsp; log₂(8) = 3</div>
+    <p>„log₂(8) = <b>Welche Hochzahl von 2 ergibt 8?</b>" → Antwort: 3.</p>
+    <p class="muted">Allgemein: a<sup>x</sup> = b ⟺ x = log<sub>a</sub>(b)</p>
+  </div>
+  <div class="card">
+    <h3>Die 3 Logarithmusgesetze <span class="tag">Niveau 2–3</span></h3>
+    <div class="formula">log(u·v) = log u + log v <small>(mal → plus)</small></div>
+    <div class="formula">log(u : v) = log u − log v <small>(geteilt → minus)</small></div>
+    <div class="formula">log(u<sup>r</sup>) = r · log u <small>(Hochzahl darf nach vorn)</small></div>
+  </div>
+  <div class="card">
+    <h3>Basiswechsel (für den Taschenrechner)</h3>
+    <div class="formula">log<sub>a</sub>(b) = ln(b) / ln(a)</div>
+  </div>
+  <div class="card">
+    <h3>🧮 Log-Rechner</h3>
+    <div class="calc">
+      <div class="ci"><span class="lab">log<sub>a</sub>(b): a =</span><input type="number" id="la" value="2"></div>
+      <div class="ci"><span class="lab">b =</span><input type="number" id="lb" value="8"></div>
+      <div class="out" id="lout">log₂(8) = 3</div>
+    </div>
+  </div>
+  <div class="tr">🇹🇷 <b>Türkçe:</b> log "kaçıncı kuvvet?" demek. Çarpma → toplama, bölme → çıkarma, üs → öne kat sayı olarak çıkar. Hesap makinesinde: log_a(b) = ln(b)/ln(a).</div>
+</section>
+
+<!-- GLEICHUNGEN -->
+<section id="gleich">
+  <h2 class="sec">⑧ Exponentialgleichungen lösen</h2>
+  <p class="sub">Drei Typen – erkenne den Typ, dann ist der Weg klar.</p>
+  <div class="card">
+    <h3>Typ I — direkt mit log/ln <span class="tag">b·aˣ − c = 0</span></h3>
+    <p>Term isolieren, dann logarithmieren.</p>
+    <p class="step">3 · 2ˣ = 48</p>
+    <p class="step">2ˣ = 16</p>
+    <p class="step">x = log₂(16) = 4 &nbsp;(oder ln16/ln2)</p>
+  </div>
+  <div class="card">
+    <h3>Typ II — Ausklammern + Satz vom Nullprodukt</h3>
+    <p>Wenn x in jedem Summanden steckt → gemeinsamen Faktor ausklammern.</p>
+    <p class="step">eˣ·x − 3eˣ = 0</p>
+    <p class="step">eˣ·(x − 3) = 0</p>
+    <p class="step">eˣ ist nie 0 → also x − 3 = 0 → <b>x = 3</b></p>
+    <p class="muted">S.v.N.: Ein Produkt ist 0, wenn ein Faktor 0 ist.</p>
+  </div>
+  <div class="card">
+    <h3>Typ III — Substitution</h3>
+    <p>Bei eᵇ²ˣ-Termen: setze u = eˣ (dann ist e<sup>2x</sup> = u²).</p>
+    <p class="step">e<sup>2x</sup> − 5·eˣ + 6 = 0</p>
+    <p class="step">u² − 5u + 6 = 0 &nbsp;(u = eˣ)</p>
+    <p class="step">u = 2 oder u = 3 &nbsp;(pq-/Mitternachtsformel)</p>
+    <p class="step">eˣ = 2 → x = ln2 &nbsp;·&nbsp; eˣ = 3 → x = ln3</p>
+  </div>
+  <div class="tr">🇹🇷 <b>Türkçe:</b> Tip I: terimi yalnız bırak, log al. Tip II: ortak çarpan parantezine al, çarpım sıfırsa bir çarpan sıfırdır (eˣ asla 0 olmaz!). Tip III: u = eˣ koy, ikinci derece denklem çöz, sonra geri koy.</div>
+</section>
+
+<!-- QUIZ -->
+<section id="quiz">
+  <h2 class="sec">🎯 Gemischtes Quiz</h2>
+  <p class="sub">Erst selbst rechnen, dann „Lösung zeigen". Notiere, was du falsch hast.</p>
+  <div id="quizbox"></div>
+  <div class="card" style="text-align:center">
+    <h3>💪 Du schaffst das, Zeynep!</h3>
+    <p class="muted">Jeden Tag ein bisschen. Verstehen schlägt auswendig lernen.</p>
+  </div>
+</section>
+
+<footer>Mit ❤️ gemacht für Zeynep · Viel Erfolg in der KA am 24.06.2026</footer>
+</div>
+
+<script>
+// ---- Countdown ----
+(function(){
+  const exam=new Date('2026-06-24T00:00:00');
+  const now=new Date();
+  const d=Math.max(0,Math.ceil((exam-now)/86400000));
+  document.getElementById('days').textContent=d;
+  const total=9; // from 15.06
+  document.getElementById('planbar').style.width=Math.min(100,Math.round((total-d)/total*100))+'%';
+})();
+
+// ---- Tabs ----
+const tabs=document.getElementById('tabs');
+tabs.addEventListener('click',e=>{
+  const b=e.target.closest('.tab'); if(!b)return;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+  b.classList.add('active');
+  document.getElementById(b.dataset.t).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(b.dataset.t==='graph')draw();
+});
+
+// ---- Log-Rechner ----
+function updLog(){
+  const a=parseFloat(document.getElementById('la').value);
+  const b=parseFloat(document.getElementById('lb').value);
+  const out=document.getElementById('lout');
+  if(a>0&&a!==1&&b>0){
+    const r=Math.log(b)/Math.log(a);
+    out.textContent=`log${sub(a)}(${fmt(b)}) = ${fmt(r)}`;
+  } else out.textContent='a>0, a≠1, b>0 nötig';
+}
+function fmt(n){return Number.isInteger(n)?n:Math.round(n*1000)/1000}
+function sub(n){return (''+n).split('').map(c=>'₀₁₂₃₄₅₆₇₈₉'[c]||c).join('')}
+document.getElementById('la').addEventListener('input',updLog);
+document.getElementById('lb').addEventListener('input',updLog);
+updLog();
+
+// ---- Interactive graph ----
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+let mode='base';
+const sa=document.getElementById('sa'),sb=document.getElementById('sb'),sc=document.getElementById('sc');
+const W=cv.width,H=cv.height,ox=W/2,oy=H/2,scale=42; // px per unit
+function f(x,a,b,c){
+  switch(mode){
+    case 'vshift':return b*Math.pow(a,x)+c;
+    case 'hshift':return b*Math.pow(a,x+c);
+    case 'vstretch':return c*b*Math.pow(a,x);
+    case 'hstretch':return b*Math.pow(a,c*x);
+    default:return b*Math.pow(a,x);
+  }
+}
+function asymptote(c){return mode==='vshift'?c:0}
+function eqText(a,b,c){
+  a=fmt(a);b=fmt(b);c=fmt(c);
+  switch(mode){
+    case 'vshift':return `f(x) = ${b}·${a}ˣ ${c>=0?'+ '+c:'− '+(-c)}`;
+    case 'hshift':return `f(x) = ${b}·${a}^(x ${c>=0?'+'+c:c})`;
+    case 'vstretch':return `f(x) = ${c}·${b}·${a}ˣ`;
+    case 'hstretch':return `f(x) = ${b}·${a}^(${c}·x)`;
+    default:return `f(x) = ${b}·${a}ˣ`;
+  }
+}
+function draw(){
+  const a=parseFloat(sa.value),b=parseFloat(sb.value),c=parseFloat(sc.value);
+  document.getElementById('va').textContent=a.toFixed(1);
+  document.getElementById('vb').textContent=b.toFixed(1);
+  document.getElementById('vc').textContent=c.toFixed(1);
+  document.getElementById('eq').textContent=eqText(a,b,c);
+  ctx.clearRect(0,0,W,H);
+  // grid
+  ctx.strokeStyle='#1c2348';ctx.lineWidth=1;
+  for(let gx=-8;gx<=8;gx++){ctx.beginPath();ctx.moveTo(ox+gx*scale,0);ctx.lineTo(ox+gx*scale,H);ctx.stroke();}
+  for(let gy=-5;gy<=5;gy++){ctx.beginPath();ctx.moveTo(0,oy+gy*scale);ctx.lineTo(W,oy+gy*scale);ctx.stroke();}
+  // axes
+  ctx.strokeStyle='#5b6699';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,oy);ctx.lineTo(W,oy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ox,0);ctx.lineTo(ox,H);ctx.stroke();
+  ctx.fillStyle='#a7b0d8';ctx.font='12px Inter';
+  ctx.fillText('x',W-14,oy-8);ctx.fillText('y',ox+8,14);
+  ctx.fillText('1',ox+scale-3,oy+16);ctx.fillText('1',ox+6,oy-scale+4);
+  // asymptote
+  const asy=asymptote(c);
+  if(Math.abs(asy)<6){
+    ctx.strokeStyle='#fbbf24';ctx.setLineDash([6,6]);ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(0,oy-asy*scale);ctx.lineTo(W,oy-asy*scale);ctx.stroke();
+    ctx.setLineDash([]);ctx.fillStyle='#fbbf24';ctx.fillText('Asymptote y='+fmt(asy),8,oy-asy*scale-6);
+  }
+  // curve
+  if(a>0&&a!==1){
+    ctx.strokeStyle='#22d3ee';ctx.lineWidth=3;ctx.beginPath();let started=false;
+    for(let px=0;px<=W;px++){
+      const x=(px-ox)/scale;const y=f(x,a,b,c);const py=oy-y*scale;
+      if(py<-1000||py>H+1000){started=false;continue;}
+      if(!started){ctx.moveTo(px,py);started=true;}else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+    // y-intercept point
+    const y0=f(0,a,b,c);
+    ctx.fillStyle='#f472b6';ctx.beginPath();ctx.arc(ox,oy-y0*scale,5,0,7);ctx.fill();
+  }
+  // readout
+  const a_=parseFloat(sa.value);
+  const mono=a_>1?'steigend ↗':(a_<1?'fallend ↘':'konstant');
+  document.getElementById('readout').innerHTML=
+    `<div class="pill">f(0) = <b>${fmt(f(0,a,b,c))}</b></div>`+
+    `<div class="pill">Asymptote: <b>y=${fmt(asy)}</b></div>`+
+    `<div class="pill">${a_>1?'a&gt;1':'0&lt;a&lt;1'} → <b>${mono}</b></div>`;
+}
+[sa,sb,sc].forEach(s=>s.addEventListener('input',draw));
+document.getElementById('modes').addEventListener('click',e=>{
+  const c=e.target.closest('.chip');if(!c)return;
+  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+  c.classList.add('active');mode=c.dataset.m;
+  const lc=document.getElementById('lc');
+  lc.textContent = (mode==='base')?'Parameter c (inaktiv)':'Parameter c';
+  draw();
+});
+draw();
+
+// ---- Quiz ----
+const quiz=[
+  {q:"Berechne: 2⁵ · 2³",a:"2⁸ = 256",s:["Gleiche Basis mal → Exponenten addieren","2^(5+3) = 2⁸ = 256"]},
+  {q:"Ist die Folge 4 → 12 → 36 → 108 linear oder exponentiell?",a:"Exponentiell (×3)",s:["Quotient: 12/4=3, 36/12=3, 108/36=3","Faktor konstant → exponentiell, f(x)=4·3ˣ"]},
+  {q:"f(x)=5·2ˣ. Was ist der Anfangswert und f(3)?",a:"Anfangswert 5, f(3)=40",s:["b = f(0) = 5","f(3)=5·2³ = 5·8 = 40"]},
+  {q:"Eine Population wächst um 8 % pro Jahr. Wachstumsfaktor a?",a:"a = 1,08",s:["Zunahme um p% → a = 1 + p/100","a = 1 + 8/100 = 1,08"]},
+  {q:"Wie verschiebt f(x)=2^(x+3) den Graphen von 2ˣ?",a:"3 nach LINKS",s:["+c im Exponenten = waagerecht, andersrum","x+3 → 3 Einheiten nach links"]},
+  {q:"Berechne log₃(81).",a:"4",s:["Welche Hochzahl von 3 ergibt 81?","3⁴ = 81 → log₃(81)=4"]},
+  {q:"Vereinfache: log(8) + log(2)",a:"log(16)",s:["mal-Gesetz rückwärts: log u + log v = log(u·v)","log(8·2) = log(16)"]},
+  {q:"Löse: 4·3ˣ = 36",a:"x = 2",s:["3ˣ = 9","x = log₃(9) = 2 (denn 3²=9)"]},
+  {q:"Löse durch Ausklammern: eˣ·x − 2eˣ = 0",a:"x = 2",s:["eˣ(x−2)=0","eˣ≠0 → x−2=0 → x=2"]},
+  {q:"Löse mit Substitution: e^(2x) − 6eˣ + 8 = 0",a:"x = ln2 oder x = ln4",s:["u=eˣ: u²−6u+8=0","u=2 oder u=4","eˣ=2→x=ln2 ; eˣ=4→x=ln4"]},
+  {q:"Wogegen geht f(x)=eˣ für x → −∞ ? (Asymptote)",a:"gegen 0 (y=0)",s:["Für sehr kleine x wird eˣ winzig","Asymptote ist die x-Achse, y=0"]},
+  {q:"Welchen Wert hat ln(e)?",a:"1",s:["ln ist Umkehrung von eˣ","ln(e¹) = 1"]},
+];
+const qb=document.getElementById('quizbox');
+quiz.forEach((item,i)=>{
+  const div=document.createElement('div');div.className='q';
+  div.innerHTML=`<div class="qhead"><span class="qnum">Aufgabe ${i+1}/${quiz.length}</span></div>
+    <div class="qtext">${item.q}</div>
+    <button class="reveal">Lösung zeigen</button>
+    <div class="ans"><div class="res">✅ ${item.a}</div>${item.s.map(x=>`<div class="step">→ ${x}</div>`).join('')}</div>`;
+  div.querySelector('.reveal').addEventListener('click',()=>{
+    div.classList.toggle('show');
+    div.querySelector('.reveal').textContent=div.classList.contains('show')?'Lösung verbergen':'Lösung zeigen';
+  });
+  qb.appendChild(div);
+});
+</script>
+</body>
+</html>
