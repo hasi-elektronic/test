@@ -1,4 +1,4 @@
-import { Fragment, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { calculate } from "../../../shared/calc";
@@ -21,7 +21,7 @@ import type {
 import { CALC_TYPE_LABELS, STATUS_LABELS } from "../../../shared/types";
 import { fmtDate, fmtEur, fmtNum } from "../format";
 import { Button, Card, Field, Modal, NumInput, Select, Spinner, TextInput } from "../components/ui";
-import { AuthContext } from "../auth";
+import { useAuth } from "../auth";
 import { produktSpecOf, cartChanged } from "../offer";
 
 function SectionSum({ label, value }: { label: string; value: number }) {
@@ -171,7 +171,7 @@ export default function CalcEditorPage() {
 
   const [calc, setCalc] = useState<CalcRow | null>(null);
   const [data, setData] = useState<CalcData | null>(null);
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [shipMaster, setShipMaster] = useState<ShippingMaster[]>([]);
