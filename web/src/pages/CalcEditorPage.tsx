@@ -399,7 +399,7 @@ export default function CalcEditorPage() {
       bezeichnung: calc.title || CALC_TYPE_LABELS[calc.calc_type],
       spec: produktSpecOf(calc),
       menge: calc.data.batchQty || 1,
-      einzel: calc.sales_unit,
+      einzel: result?.salesPerUnit ?? calc.sales_unit,  // result = local calc, sales_unit = DB fallback
       customer_name: calc.customer_name,
       drawing_no: calc.drawing_no,
     });
