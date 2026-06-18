@@ -202,6 +202,22 @@ app.post("/import/cad", async (c) => {
     data.materials.push({ label: "", material: "", shape: "eckig", width: 0, height: 0, thickness: 0, qtyPerPiece: 0, pricePerKg: 0 });
   }
 
+  // SVG Thumbnail für Angebot-PDF
+  if (body.svg && typeof body.svg === "string" && body.svg.length > 50) {
+    (data as any).svgContent = body.svg;
+  }
+
+  // Works (Arbeitsgänge) aus dem CAD-Tool übernehmen
+  if (Array.isArray(body.works) && body.works.length > 0) {
+    data.works = body.works.map((w: any) => ({
+      label: (w.label ?? "") + "",
+      rate: Number(w.rate) || 0,
+      prodMin: Number(w.prodMin) || 0,
+      setupMin: Number(w.setupMin) || 0,
+      qtyPerPiece: Number(w.qty) || 1,
+    }));
+  }
+
   const densities = await loadDensities(c.env.DB);
   const r = calculate(data, densities);
 
