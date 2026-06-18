@@ -141,10 +141,29 @@ export default function OfferPrintPage() {
 
   const confirmAndAction = async (action: () => Promise<void>) => {
     if (!nrConfirmed) {
-      // Atomic: Server vergibt die Nummer, wir übernehmen sie
+      // 1. Atomic Nummer vergeben
       const result = await api.post<{ nr: string }>("/angebot/confirm-nr", { nr: angebotNr }).catch(() => null);
+      const finalNr = result?.nr ?? angebotNr;
       if (result?.nr) setAngebotNr(result.nr);
       setNrConfirmed(true);
+      // 2. Angebot im Archiv speichern
+      const mwstRate = 0.19;
+      const nettoSum = (items ?? []).reduce((a, p) => a + (p.menge || 0) * (p.einzel || 0), 0);
+      api.post("/angebote", {
+        nr: finalNr,
+        angebot_nr: finalNr,
+        calc_ids: [...new Set((items ?? []).map((p) => p.calc_id).filter(Boolean))],
+        empfaenger,
+        empfaenger_adr: empfaengerAdr,
+        bearbeiter,
+        datum,
+        summe_netto: nettoSum,
+        summe_brutto: nettoSum * (1 + mwstRate),
+        positions: (items ?? []).map((p) => ({
+          bezeichnung: p.bezeichnung, spec: p.spec,
+          menge: p.menge, einzel: p.einzel
+        })),
+      }).catch(() => {});
     }
     await action();
   };
