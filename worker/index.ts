@@ -229,19 +229,13 @@ app.post("/import/cad", async (c) => {
     }
   }
 
-  // optionales SVG-Vorschaubild in R2 ablegen
-  if (typeof body.svg === "string" && body.svg.length > 0) {
-    try {
-      const svgKey = `cad-svg/${id}.svg`;
-      await c.env.BILDER.put(svgKey, body.svg, { httpMetadata: { contentType: "image/svg+xml" } });
-      data.svgKey = svgKey;
-    } catch {
-      /* SVG optional – Fehler ignorieren */
-    }
+  // SVG direkt in data JSON einbetten (kein R2 nötig)
+  if (typeof body.svg === "string" && body.svg.length > 100) {
+    data.svgContent = body.svg;
   }
 
-  // Daten in DB aktualisieren wenn dxfKey oder svgKey gesetzt wurde
-  if (data.dxfKey || data.svgKey) {
+  // Daten in DB aktualisieren wenn dxfKey oder svgContent gesetzt wurde
+  if (data.dxfKey || data.svgContent) {
     await c.env.DB.prepare("UPDATE calculations SET data = ? WHERE id = ?").bind(JSON.stringify(data), id).run();
   }
 
@@ -780,7 +774,10 @@ app.put("/settings", requireAdmin, async (c) => {
 
 app.get("/cart", async (c) => {
   const { results } = await c.env.DB.prepare(
-    "SELECT * FROM cart_items WHERE user_id = ? ORDER BY id"
+    `SELECT ci.*, json_extract(c.data, '$.svgContent') AS svgContent
+     FROM cart_items ci
+     LEFT JOIN calculations c ON c.id = ci.calc_id
+     WHERE ci.user_id = ? ORDER BY ci.id`
   )
     .bind(c.get("user").id)
     .all();
