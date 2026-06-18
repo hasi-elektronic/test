@@ -8,7 +8,20 @@ type Env = {
   DB: D1Database;
   ASSETS: Fetcher;
   BILDER: R2Bucket;
+  RESEND_API_KEY?: string;
 };
+
+// E-Mail via Resend
+async function sendMail(env: Env, to: string, subject: string, html: string) {
+  if (!env.RESEND_API_KEY) return;
+  try {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: "Sickinger Kalkulation <noreply@machbar24.com>", to: [to], subject, html }),
+    });
+  } catch { /* optional */ }
+}
 
 type SessionUser = {
   id: number;
@@ -264,7 +277,15 @@ const requireAdmin = async (c: any, next: any) => {
   await next();
 };
 
-app.get("/auth/me", (c) => c.json(c.get("user")));
+app.get("/auth/me", async (c) => {
+  // Abgelaufene Sessions bereinigen (gelegentlich)
+  if (Math.random() < 0.05) { // 5% Wahrscheinlichkeit pro Request
+    c.executionCtx.waitUntil(
+      c.env.DB.prepare("DELETE FROM sessions WHERE expires_at < datetime('now')").run()
+    );
+  }
+  return c.json(c.get("user"));
+});
 
 app.post("/auth/change-password", async (c) => {
   const { oldPassword, newPassword } = await c.req.json<{ oldPassword: string; newPassword: string }>();
@@ -503,6 +524,10 @@ app.get("/calculations", async (c) => {
   const type = c.req.query("type");
   const status = c.req.query("status");
   const q = c.req.query("q");
+  const sb = c.req.query("sb");           // Sachbearbeiter
+  const dateFrom = c.req.query("from");   // YYYY-MM-DD
+  const dateTo = c.req.query("to");       // YYYY-MM-DD
+  const myOnly = c.req.query("my") === "1"; // Nur eigene
   const where: string[] = [];
   const binds: unknown[] = [];
   if (type) {
@@ -518,6 +543,10 @@ app.get("/calculations", async (c) => {
     const like = `%${q}%`;
     binds.push(like, like, like, like);
   }
+  if (sb) { where.push("sachbearbeiter = ?"); binds.push(sb); }
+  if (dateFrom) { where.push("calc_date >= ?"); binds.push(dateFrom); }
+  if (dateTo) { where.push("calc_date <= ?"); binds.push(dateTo); }
+  if (myOnly) { where.push("created_by = ?"); binds.push(c.get("user").id); }
   const sql = `
     SELECT c.id, c.calc_type, c.title, c.version, c.parent_id, c.status, c.customer_name,
            c.inquiry_no, c.drawing_no, c.calc_date, c.sachbearbeiter, c.manufacturing_cost, c.sales_total, c.sales_unit,
@@ -567,6 +596,91 @@ app.get("/calculations/:id/svg", async (c) => {
   });
 });
 // Angebot-Nummer: nächste vorschlagen (ohne zu reservieren)
+
+// Angebot-Archiv: Liste
+app.get("/angebote", async (c) => {
+  const rows = await c.env.DB.prepare(
+    `SELECT * FROM angebote ORDER BY created_at DESC LIMIT 200`
+  ).all<Record<string, unknown>>();
+  return c.json(rows.results);
+});
+
+// Angebot-Archiv: Speichern (beim PDF-Druck)
+app.post("/angebote", async (c) => {
+  const b = await c.req.json<any>();
+  const res = await c.env.DB.prepare(
+    `INSERT INTO angebote (nr, calc_ids, empfaenger, empfaenger_adr, bearbeiter, datum, summe_netto, summe_brutto, positions, angebot_nr, created_by)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?)`
+  ).bind(
+    b.nr ?? "", JSON.stringify(b.calc_ids ?? []),
+    b.empfaenger ?? "", b.empfaenger_adr ?? "", b.bearbeiter ?? "",
+    b.datum ?? new Date().toISOString().slice(0,10),
+    Number(b.summe_netto) || 0, Number(b.summe_brutto) || 0,
+    JSON.stringify(b.positions ?? []), b.angebot_nr ?? "",
+    c.get("user").id
+  ).run();
+  return c.json({ id: res.meta.last_row_id });
+});
+
+// Angebot-Status ändern
+app.put("/angebote/:id", async (c) => {
+  const id = Number(c.req.param("id"));
+  const { status } = await c.req.json<{ status: string }>();
+  await c.env.DB.prepare("UPDATE angebote SET status = ? WHERE id = ?").bind(status, id).run();
+  return c.json({ ok: true });
+});
+
+
+// Passwort-Reset anfordern
+app.post("/auth/request-reset", async (c) => {
+  const { email } = await c.req.json<{ email: string }>();
+  const user = await c.env.DB.prepare(
+    "SELECT id, name, email FROM users WHERE lower(email) = lower(?) AND active = 1"
+  ).bind(email?.trim() ?? "").first<{ id: number; name: string; email: string }>();
+  // Immer OK zurückgeben (kein User-Enumeration)
+  if (user) {
+    const token = crypto.randomUUID() + crypto.randomUUID();
+    const expires = new Date(Date.now() + 3600_000).toISOString(); // 1h
+    await c.env.DB.prepare(
+      "INSERT INTO password_reset_tokens (token, user_id, expires_at) VALUES (?, ?, ?)"
+    ).bind(token, user.id, expires).run();
+    const resetUrl = `https://sickinger-kalkulationssystem.pages.dev/reset-password?token=${token}`;
+    c.executionCtx.waitUntil(sendMail(c.env, user.email,
+      "Passwort zurücksetzen – Sickinger Kalkulation",
+      `<h2>Passwort zurücksetzen</h2>
+       <p>Hallo ${user.name},</p>
+       <p>Klicken Sie auf den Link um Ihr Passwort zurückzusetzen (gültig 1 Stunde):</p>
+       <p><a href="${resetUrl}">${resetUrl}</a></p>
+       <p>Falls Sie diese Anfrage nicht gestellt haben, ignorieren Sie diese E-Mail.</p>`
+    ));
+  }
+  return c.json({ ok: true });
+});
+
+// Passwort-Reset bestätigen
+app.post("/auth/reset-password", async (c) => {
+  const { token, password } = await c.req.json<{ token: string; password: string }>();
+  if (!token || !password || password.length < 8)
+    return c.json({ error: "Token und Passwort (min. 8 Zeichen) erforderlich" }, 400);
+  const row = await c.env.DB.prepare(
+    "SELECT user_id FROM password_reset_tokens WHERE token = ? AND expires_at > datetime('now') AND used = 0"
+  ).bind(token).first<{ user_id: number }>();
+  if (!row) return c.json({ error: "Token ungültig oder abgelaufen" }, 400);
+  const salt = crypto.randomUUID();
+  const hash = await crypto.subtle.digest("SHA-256",
+    new TextEncoder().encode(salt + password));
+  const hashHex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,"0")).join("");
+  await c.env.DB.prepare(
+    "UPDATE users SET password_hash = ?, salt = ? WHERE id = ?"
+  ).bind(hashHex, salt, row.user_id).run();
+  await c.env.DB.prepare(
+    "UPDATE password_reset_tokens SET used = 1 WHERE token = ?"
+  ).bind(token).run();
+  // Alle Sessions des Users löschen
+  await c.env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(row.user_id).run();
+  return c.json({ ok: true });
+});
+
 app.get("/angebot/next-nr", async (c) => {
   const year = new Date().getFullYear();
   const [lastNr, lastYear] = await Promise.all([
@@ -692,6 +806,32 @@ app.put("/calculations/:id", async (c) => {
       id
     )
     .run();
+    // Status-Änderung → Log + E-Mail-Benachrichtigung
+  if (p.status && p.status !== row.status) {
+    const LABELS: Record<string, string> = {
+      entwurf:"Entwurf",angebot:"Angebot",auftrag:"Auftrag",abgeschlossen:"Abgeschlossen",abgelehnt:"Abgelehnt"
+    };
+    const me = c.get("user");
+    c.executionCtx.waitUntil((async () => {
+      await c.env.DB.prepare(
+        "INSERT INTO status_log (calc_id,old_status,new_status,changed_by) VALUES (?,?,?,?)"
+      ).bind(id, row.status, p.status, me.id).run();
+      const cfg = await c.env.DB.prepare(
+        "SELECT key,value FROM settings WHERE key IN ('email_notify_status','email_admin')"
+      ).all<{key:string;value:string}>();
+      const cfgMap = Object.fromEntries(cfg.results.map((r) => [r.key, r.value]));
+      if (cfgMap.email_notify_status === "1" && cfgMap.email_admin) {
+        await sendMail(c.env, cfgMap.email_admin,
+          `[Kalkulation] ${LABELS[p.status]}: ${row.title}`,
+          `<h2>Status geändert</h2>
+           <p><b>${row.title}</b> (ID ${id})</p>
+           <p>${LABELS[row.status]} → <b>${LABELS[p.status]}</b></p>
+           <p>Geändert von: ${me.name}</p>
+           <p><a href="https://sickinger-kalkulationssystem.pages.dev/kalkulationen/${id}">Öffnen →</a></p>`
+        );
+      }
+    })());
+  }
   return c.json({ ok: true });
 });
 
